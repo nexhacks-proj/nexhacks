@@ -116,6 +116,10 @@ IMPORTANT:
     return parsed
   } catch (error) {
     console.error('Error parsing resume with Gemini:', error)
+    // Preserve the original error message if it's already an Error
+    if (error instanceof Error) {
+      throw error
+    }
     throw new Error('Failed to parse resume with AI')
   }
 }
