@@ -2,10 +2,17 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { Candidate, Job } from '@/types'
 
 const getGeminiKey = () => {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY environment variable is not set')
+  // Try multiple sources for the API key
+  const apiKey = process.env.GEMINI_API_KEY || 
+                 process.env.NEXT_PUBLIC_GEMINI_API_KEY // Fallback if needed
+  
+  if (!apiKey) {
+    console.error('GEMINI_API_KEY not found in environment')
+    console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('GEMINI')))
+    console.error('NODE_ENV:', process.env.NODE_ENV)
+    throw new Error('GEMINI_API_KEY environment variable is not set. Make sure .env.local exists in the project root and contains GEMINI_API_KEY=your-key-here. Restart the dev server after creating/updating .env.local.')
   }
-  return process.env.GEMINI_API_KEY
+  return apiKey
 }
 
 const getModel = () => {

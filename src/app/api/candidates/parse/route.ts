@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { parseResumeWithAI } from '@/lib/gemini'
 import { Job } from '@/types'
 
+// This endpoint uses Gemini AI for resume parsing
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -14,6 +15,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Debug: Check environment variable
+    console.log('[DEBUG] GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY)
+    console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV)
+    
+    // Use Gemini AI to parse the resume
     const parsed = await parseResumeWithAI(rawResume, job as Job)
 
     return NextResponse.json({

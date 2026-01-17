@@ -25,6 +25,7 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState({ current: 0, total: 0 })
   const [error, setError] = useState<string | null>(null)
+  const [manualText, setManualText] = useState('')
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -62,7 +63,10 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
         // Add to mock resumes pool
         addToMockResumes(newResume)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to read file')
+        const errorMessage = err instanceof Error ? err.message : 'Failed to read file'
+        console.error('File upload error:', err)
+        setError(`Failed to process ${file.name}: ${errorMessage}`)
+        // Continue with other files
       }
     }
 
@@ -73,24 +77,39 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
   }
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const text = e.clipboardData.getData('text')
-    if (text.trim()) {
-      const emailMatch = text.match(/[\w.-]+@[\w.-]+\.\w+/)
-      const email = emailMatch ? emailMatch[0] : `candidate${Date.now()}@example.com`
-
-      const newResume = {
-        id: `paste-${Date.now()}`,
-        name: `Candidate ${Date.now()}`,
-        email,
-        rawResume: text
+    // Let paste happen normally first
+    setTimeout(async () => {
+      const text = (e.target as HTMLTextAreaElement).value
+      if (text.trim()) {
+        await handleManualSubmit(text)
       }
+    }, 100)
+  }
 
-      // Add to mock resumes pool
-      addToMockResumes(newResume)
+  const handleManualSubmit = async (text?: string) => {
+    const resumeText = text || manualText
+    if (!resumeText.trim()) return
 
-      // Auto-process pasted resume
-      await processResumesImmediately([newResume])
+    setError(null)
+
+    const emailMatch = resumeText.match(/[\w.-]+@[\w.-]+\.\w+/)
+    const email = emailMatch ? emailMatch[0] : `candidate${Date.now()}@example.com`
+
+    const newResume = {
+      id: `paste-${Date.now()}`,
+      name: `Candidate ${Date.now()}`,
+      email,
+      rawResume: resumeText
     }
+
+    // Add to mock resumes pool
+    addToMockResumes(newResume)
+
+    // Clear manual text
+    setManualText('')
+
+    // Auto-process pasted resume
+    await processResumesImmediately([newResume])
   }
 
   const removeResume = (id: string) => {
@@ -118,7 +137,14 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
       })
 
       if (!response.ok) {
-        throw new Error('Failed to parse resume')
+        let errorMessage = 'Failed to parse resume'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`
+        }
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -133,6 +159,11 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
 
       if (result.status === 'fulfilled') {
         const { resume, data } = result.value
+        if (!data || !data.candidate) {
+          console.error('Invalid response data:', data)
+          setError(`Failed to parse ${resume.name}: Invalid response from server`)
+          return
+        }
         const parsedCandidate: Candidate = {
           ...data.candidate,
           id: resume.id,
@@ -141,8 +172,16 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
         }
         addCandidate(parsedCandidate)
       } else {
-        console.error('Error processing resume:', result.reason)
-        setError('Failed to process one or more resumes')
+        const error = result.reason
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('Error processing resume:', error)
+        
+        // Try to get more specific error from API response
+        if (error instanceof Error && error.message.includes('Failed to parse')) {
+          setError(`Failed to parse resume: ${errorMessage}. Check console for details.`)
+        } else {
+          setError(`Failed to process resume: ${errorMessage}`)
+        }
       }
     }
 
@@ -173,7 +212,14 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
       })
 
       if (!response.ok) {
-        throw new Error('Failed to parse resume')
+        let errorMessage = 'Failed to parse resume'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`
+        }
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -197,8 +243,10 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
         addCandidate(parsedCandidate)
         processedIds.push(resume.id)
       } else {
-        console.error('Error processing resume:', result.reason)
-        setError('Failed to process one or more resumes')
+        const error = result.reason
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('Error processing resume:', error)
+        setError(`Failed to process ${resume.name}: ${errorMessage}`)
       }
     }
 
@@ -242,12 +290,24 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
 
           <div className="text-sm text-slate-400">or</div>
 
-          <textarea
-            placeholder="Paste resume text here (auto-processes on paste)..."
-            onPaste={handlePaste}
-            disabled={isProcessing}
-            className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[100px] disabled:opacity-50 disabled:cursor-not-allowed"
-          />
+          <div className="space-y-2">
+            <textarea
+              placeholder="Paste or type resume text here..."
+              value={manualText}
+              onChange={(e) => setManualText(e.target.value)}
+              onPaste={handlePaste}
+              disabled={isProcessing}
+              className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[100px] disabled:opacity-50 disabled:cursor-not-allowed resize-y"
+            />
+            {manualText.trim() && !isProcessing && (
+              <button
+                onClick={() => handleManualSubmit()}
+                className="w-full px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                Process Text
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -320,10 +380,19 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
             <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-medium text-danger mb-1">Upload Error</p>
-              <p className="text-sm text-danger/80">{error}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                Tip: Supported formats are PDF, Word (.docx), and plain text (.txt)
-              </p>
+              <p className="text-sm text-danger/80 mb-2">{error}</p>
+              <details className="text-xs">
+                <summary className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                  Troubleshooting tips
+                </summary>
+                <ul className="list-disc list-inside mt-2 space-y-1 text-slate-500 dark:text-slate-400">
+                  <li>Supported formats: PDF, Word (.docx), and plain text (.txt)</li>
+                  <li>Check that your .env.local file has GEMINI_API_KEY set</li>
+                  <li>For PDFs: Make sure the file isn't password-protected</li>
+                  <li>For manual text: Paste or type directly, then click "Process Text"</li>
+                  <li>Check browser console (F12) for more detailed error messages</li>
+                </ul>
+              </details>
             </div>
           </div>
         </div>
