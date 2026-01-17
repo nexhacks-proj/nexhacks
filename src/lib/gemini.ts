@@ -1,12 +1,17 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { Candidate, Job } from '@/types'
 
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error('GEMINI_API_KEY environment variable is not set')
+const getGeminiKey = () => {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY environment variable is not set')
+  }
+  return process.env.GEMINI_API_KEY
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+const getModel = () => {
+  const genAI = new GoogleGenerativeAI(getGeminiKey())
+  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+}
 
 interface ResumeParseResult {
   skills: string[]
@@ -94,6 +99,7 @@ IMPORTANT:
 - Return ONLY the JSON object, no markdown, no explanations`
 
   try {
+    const model = getModel()
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
