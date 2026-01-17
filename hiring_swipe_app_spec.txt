@@ -1,0 +1,86 @@
+AI CODING AGENT SPEC — STARTUP HIRING SWIPE APP (MVP)
+
+GOAL
+Build a mobile-first web app that helps early-stage startup founders screen job applicants quickly using structured filters and a swipe-based interface. The product reduces resume screening time without fully automating hiring decisions.
+
+TARGET USER
+Early-stage startup founders (3–20 employees) who are actively hiring.
+
+CORE CONCEPT
+Applicants are pre-filtered and summarized by AI into high-signal “cards.”
+Founders swipe through candidates instead of reading full resumes.
+The system assists decisions — it does not auto-reject or auto-hire.
+
+FOUNDER FLOW (MVP)
+
+1. JOB SETUP
+Founder creates a job with the following filters:
+- Role title
+- Required tech stack (tag-based)
+- Experience level (none / 1–3 years / 3+ years)
+- Visa sponsorship allowed (yes/no)
+- Startup experience preferred (yes/no)
+- Portfolio required (yes/no)
+
+2. CANDIDATE INGESTION
+- Upload resumes (PDF or text) OR use mock candidate data
+- Store raw resume text for each candidate
+
+3. AI PREPROCESSING (CRITICAL)
+For each candidate:
+- Extract structured fields (skills, experience, projects)
+- Generate:
+  - 2–3 strongest signals
+  - 1 standout project or experience
+  - Short AI summary (1–2 sentences):
+    Example: “Strong fit for X due to A and B; weaker on Y due to limited experience.”
+
+IMPORTANT:
+- AI does NOT decide pass/fail
+- AI only summarizes, tags, and highlights signal
+
+SWIPE INTERFACE (CORE UX)
+
+Each candidate card displays:
+- Name
+- Target role
+- 2–3 key strengths (bulleted)
+- 1 standout project or experience
+- AI-generated summary
+
+User actions:
+- Swipe right → “Interested”
+  - Auto-trigger next step (interview email or placeholder action)
+- Swipe left → “No”
+  - Archive candidate or send polite rejection
+- Star → Save candidate for later review
+
+Additional functionality:
+- Tap card to view full resume
+- Undo last swipe
+
+HIRING FUNNEL POSITIONING
+This tool operates between:
+- Initial resume collection
+- Interview scheduling
+
+It optimizes for instinct-driven “no vs maybe” decisions.
+
+NON-GOALS (OUT OF SCOPE)
+- No enterprise compliance features
+- No bias auditing or explainability requirements
+- No final hiring decisions
+- No candidate-facing interface
+- No large-company workflows
+
+HACKATHON CONSTRAINTS
+- Focus on startup use cases only
+- Mock data is acceptable
+- Optimize for speed, clarity, and UX
+- Prefer a simple stack (e.g. Next.js frontend, basic backend, AI API integration)
+
+PITCH FRAMING (INTERNAL)
+Describe the product as:
+“A mobile-first hiring interface that compresses hours of resume screening into minutes using structured filtering and swipe-based decision-making.”
+
+“Tinder for hiring” is a UX reference only, not the core value proposition.
