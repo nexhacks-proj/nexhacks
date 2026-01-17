@@ -16,6 +16,7 @@ export default function UploadCandidatesPage() {
   const { jobs, currentJob, setCurrentJob, addCandidate } = useStore()
   const [isLoadingMock, setIsLoadingMock] = useState(false)
   const [loadProgress, setLoadProgress] = useState({ current: 0, total: 0 })
+  const [mockError, setMockError] = useState<string | null>(null)
 
   useEffect(() => {
     const job = jobs.find(j => j.id === jobId)
@@ -30,53 +31,81 @@ export default function UploadCandidatesPage() {
     if (!currentJob) return
 
     setIsLoadingMock(true)
+    setMockError(null)
     setLoadProgress({ current: 0, total: mockRawResumes.length })
 
     let completed = 0
+    let successCount = 0
+    const errors: string[] = []
 
     // Process all mock resumes in parallel for much faster loading
     const processOne = async (mockResume: typeof mockRawResumes[0]) => {
-      const response = await fetch('/api/candidates/parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rawResume: mockResume.rawResume,
-          name: mockResume.name,
-          email: mockResume.email,
-          job: currentJob
+      try {
+        const response = await fetch('/api/candidates/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rawResume: mockResume.rawResume,
+            name: mockResume.name,
+            email: mockResume.email,
+            job: currentJob
+          })
         })
-      })
 
-      if (!response.ok) {
-        throw new Error('Failed to parse')
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          throw new Error(errorData.error || `HTTP ${response.status}`)
+        }
+
+        const data = await response.json()
+        return { mockResume, data }
+      } catch (error) {
+        throw error
       }
-
-      const data = await response.json()
-      return { mockResume, data }
     }
 
     const results = await Promise.allSettled(mockRawResumes.map(processOne))
 
-    for (const result of results) {
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]
+      const mockResume = mockRawResumes[i]
       completed++
       setLoadProgress({ current: completed, total: mockRawResumes.length })
 
       if (result.status === 'fulfilled') {
-        const { mockResume, data } = result.value
+        const { mockResume: resume, data } = result.value
         const parsedCandidate: Candidate = {
           ...data.candidate,
-          id: mockResume.id,
+          id: resume.id,
           jobId: currentJob.id,
           status: 'pending' as const
         }
         addCandidate(parsedCandidate)
+        successCount++
       } else {
+        const errorMessage = result.reason instanceof Error 
+          ? result.reason.message 
+          : 'Failed to parse'
+        errors.push(`${mockResume.name}: ${errorMessage}`)
         console.error('Error loading mock candidate:', result.reason)
       }
     }
 
     setIsLoadingMock(false)
-    router.push(`/job/${jobId}/swipe`)
+
+    // Show error if all failed, or partial success message
+    if (successCount === 0) {
+      const errorMsg = errors.length > 0 
+        ? `Failed to load mock candidates: ${errors[0]}${errors.length > 1 ? ` (and ${errors.length - 1} more)` : ''}`
+        : 'Failed to load mock candidates. Please check that GEMINI_API_KEY is set correctly.'
+      setMockError(errorMsg)
+    } else if (errors.length > 0) {
+      setMockError(`Loaded ${successCount} candidates, but ${errors.length} failed. ${errors[0]}`)
+      router.push(`/job/${jobId}/swipe`)
+    } else {
+      // All succeeded
+      router.push(`/job/${jobId}/swipe`)
+    }
   }
 
   if (!currentJob) {
@@ -151,6 +180,13 @@ export default function UploadCandidatesPage() {
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 Processing {loadProgress.current} of {loadProgress.total} mock candidates with Gemini AI...
               </p>
+            </div>
+          )}
+
+          {mockError && !isLoadingMock && (
+            <div className="mt-4 bg-danger/10 border border-danger/20 rounded-xl p-4">
+              <p className="text-sm font-medium text-danger mb-1">Mock Data Error</p>
+              <p className="text-sm text-danger/80">{mockError}</p>
             </div>
           )}
         </div>
