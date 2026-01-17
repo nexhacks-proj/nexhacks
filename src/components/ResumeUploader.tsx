@@ -102,48 +102,38 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
     setError(null)
     setProgress({ current: 0, total: resumesToProcess.length })
 
-    let completed = 0
-
-    // Process all resumes in parallel for much faster processing
-    const processOne = async (resume: ResumeFile) => {
-      const response = await fetch('/api/candidates/parse', {
+    try {
+      // Send all resumes in a single batch API call to avoid rate limiting
+      const response = await fetch('/api/candidates/parse-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rawResume: resume.rawResume,
-          name: resume.name,
-          email: resume.email,
+          resumes: resumesToProcess,
           job
         })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to parse resume')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'Failed to parse resumes')
       }
 
       const data = await response.json()
-      return { resume, data }
-    }
 
-    const results = await Promise.allSettled(resumesToProcess.map(processOne))
-
-    for (const result of results) {
-      completed++
-      setProgress({ current: completed, total: resumesToProcess.length })
-
-      if (result.status === 'fulfilled') {
-        const { resume, data } = result.value
+      // Add all parsed candidates to the store
+      for (const candidate of data.candidates) {
         const parsedCandidate: Candidate = {
-          ...data.candidate,
-          id: resume.id,
+          ...candidate,
           jobId: job.id,
           status: 'pending' as const
         }
         addCandidate(parsedCandidate)
-      } else {
-        console.error('Error processing resume:', result.reason)
-        setError('Failed to process one or more resumes')
       }
+
+      setProgress({ current: resumesToProcess.length, total: resumesToProcess.length })
+    } catch (err) {
+      console.error('Error processing resumes:', err)
+      setError(err instanceof Error ? err.message : 'Failed to process resumes')
     }
 
     setIsProcessing(false)
@@ -157,49 +147,40 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
     setProgress({ current: 0, total: resumes.length })
 
     const processedIds: string[] = []
-    let completed = 0
 
-    // Process all resumes in parallel for much faster processing
-    const processOne = async (resume: ResumeFile) => {
-      const response = await fetch('/api/candidates/parse', {
+    try {
+      // Send all resumes in a single batch API call to avoid rate limiting
+      const response = await fetch('/api/candidates/parse-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rawResume: resume.rawResume,
-          name: resume.name,
-          email: resume.email,
+          resumes,
           job
         })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to parse resume')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'Failed to parse resumes')
       }
 
       const data = await response.json()
-      return { resume, data }
-    }
 
-    const results = await Promise.allSettled(resumes.map(processOne))
-
-    for (const result of results) {
-      completed++
-      setProgress({ current: completed, total: resumes.length })
-
-      if (result.status === 'fulfilled') {
-        const { resume, data } = result.value
+      // Add all parsed candidates to the store
+      for (const candidate of data.candidates) {
         const parsedCandidate: Candidate = {
-          ...data.candidate,
-          id: resume.id,
+          ...candidate,
           jobId: job.id,
           status: 'pending' as const
         }
         addCandidate(parsedCandidate)
-        processedIds.push(resume.id)
-      } else {
-        console.error('Error processing resume:', result.reason)
-        setError('Failed to process one or more resumes')
+        processedIds.push(candidate.id)
       }
+
+      setProgress({ current: resumes.length, total: resumes.length })
+    } catch (err) {
+      console.error('Error processing resumes:', err)
+      setError(err instanceof Error ? err.message : 'Failed to process resumes')
     }
 
     setIsProcessing(false)
