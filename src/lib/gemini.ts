@@ -119,25 +119,24 @@ export async function batchParseResumes(
   job: Job,
   onProgress?: (completed: number, total: number) => void
 ): Promise<Array<Omit<Candidate, 'jobId'>>> {
-  const results: Array<Omit<Candidate, 'jobId'>> = []
+  let completed = 0
 
-  for (let i = 0; i < candidates.length; i++) {
-    const candidate = candidates[i]
+  // Process all candidates in parallel for much faster batch processing
+  const processOne = async (candidate: typeof candidates[0]): Promise<Omit<Candidate, 'jobId'>> => {
     try {
       const parsed = await parseResumeWithAI(candidate.rawResume, job)
-      results.push({
+      return {
         id: candidate.id,
         name: candidate.name,
         email: candidate.email,
         rawResume: candidate.rawResume,
         ...parsed,
         status: 'pending'
-      })
-      onProgress?.(i + 1, candidates.length)
+      }
     } catch (error) {
       console.error(`Failed to parse resume for ${candidate.name}:`, error)
       // Fallback to basic parsing if AI fails
-      results.push({
+      return {
         id: candidate.id,
         name: candidate.name,
         email: candidate.email,
@@ -151,9 +150,16 @@ export async function batchParseResumes(
         standoutProject: 'Resume parsing failed',
         aiSummary: 'AI parsing failed for this candidate. Please review manually.',
         status: 'pending'
-      })
+      }
     }
   }
 
-  return results
+  const promises = candidates.map(async (candidate) => {
+    const result = await processOne(candidate)
+    completed++
+    onProgress?.(completed, candidates.length)
+    return result
+  })
+
+  return Promise.all(promises)
 }

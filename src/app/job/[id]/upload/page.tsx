@@ -32,34 +32,46 @@ export default function UploadCandidatesPage() {
     setIsLoadingMock(true)
     setLoadProgress({ current: 0, total: mockRawResumes.length })
 
-    for (let i = 0; i < mockRawResumes.length; i++) {
-      const mockResume = mockRawResumes[i]
-      try {
-        const response = await fetch('/api/candidates/parse', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rawResume: mockResume.rawResume,
-            name: mockResume.name,
-            email: mockResume.email,
-            job: currentJob
-          })
+    let completed = 0
+
+    // Process all mock resumes in parallel for much faster loading
+    const processOne = async (mockResume: typeof mockRawResumes[0]) => {
+      const response = await fetch('/api/candidates/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rawResume: mockResume.rawResume,
+          name: mockResume.name,
+          email: mockResume.email,
+          job: currentJob
         })
+      })
 
-        if (response.ok) {
-          const data = await response.json()
-          const parsedCandidate: Candidate = {
-            ...data.candidate,
-            id: mockResume.id,
-            jobId: currentJob.id,
-            status: 'pending' as const
-          }
-          addCandidate(parsedCandidate)
+      if (!response.ok) {
+        throw new Error('Failed to parse')
+      }
+
+      const data = await response.json()
+      return { mockResume, data }
+    }
+
+    const results = await Promise.allSettled(mockRawResumes.map(processOne))
+
+    for (const result of results) {
+      completed++
+      setLoadProgress({ current: completed, total: mockRawResumes.length })
+
+      if (result.status === 'fulfilled') {
+        const { mockResume, data } = result.value
+        const parsedCandidate: Candidate = {
+          ...data.candidate,
+          id: mockResume.id,
+          jobId: currentJob.id,
+          status: 'pending' as const
         }
-
-        setLoadProgress({ current: i + 1, total: mockRawResumes.length })
-      } catch (error) {
-        console.error('Error loading mock candidate:', error)
+        addCandidate(parsedCandidate)
+      } else {
+        console.error('Error loading mock candidate:', result.reason)
       }
     }
 
