@@ -34,78 +34,45 @@ export default function UploadCandidatesPage() {
     setMockError(null)
     setLoadProgress({ current: 0, total: mockRawResumes.length })
 
-    let completed = 0
-    let successCount = 0
-    const errors: string[] = []
-
-    // Process all mock resumes in parallel for much faster loading
-    const processOne = async (mockResume: typeof mockRawResumes[0]) => {
-      try {
-        const response = await fetch('/api/candidates/parse', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rawResume: mockResume.rawResume,
-            name: mockResume.name,
-            email: mockResume.email,
-            job: currentJob
-          })
+    try {
+      // Send all mock resumes in a single batch API call to avoid rate limiting
+      const response = await fetch('/api/candidates/parse-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumes: mockRawResumes,
+          job: currentJob
         })
+      })
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          throw new Error(errorData.error || `HTTP ${response.status}`)
-        }
-
-        const data = await response.json()
-        return { mockResume, data }
-      } catch (error) {
-        throw error
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `HTTP ${response.status}`)
       }
-    }
 
-    const results = await Promise.allSettled(mockRawResumes.map(processOne))
+      const data = await response.json()
 
-    for (let i = 0; i < results.length; i++) {
-      const result = results[i]
-      const mockResume = mockRawResumes[i]
-      completed++
-      setLoadProgress({ current: completed, total: mockRawResumes.length })
-
-      if (result.status === 'fulfilled') {
-        const { mockResume: resume, data } = result.value
+      // Add all parsed candidates to the store
+      for (const candidate of data.candidates) {
         const parsedCandidate: Candidate = {
-          ...data.candidate,
-          id: resume.id,
+          ...candidate,
           jobId: currentJob.id,
           status: 'pending' as const
         }
         addCandidate(parsedCandidate)
-        successCount++
-      } else {
-        const errorMessage = result.reason instanceof Error 
-          ? result.reason.message 
-          : 'Failed to parse'
-        errors.push(`${mockResume.name}: ${errorMessage}`)
-        console.error('Error loading mock candidate:', result.reason)
       }
+
+      setLoadProgress({ current: mockRawResumes.length, total: mockRawResumes.length })
+      router.push(`/job/${jobId}/swipe`)
+    } catch (error) {
+      console.error('Error loading mock candidates:', error)
+      const errorMsg = error instanceof Error
+        ? error.message
+        : 'Failed to load mock candidates. Please check that GEMINI_API_KEY is set correctly.'
+      setMockError(errorMsg)
     }
 
     setIsLoadingMock(false)
-
-    // Show error if all failed, or partial success message
-    if (successCount === 0) {
-      const errorMsg = errors.length > 0 
-        ? `Failed to load mock candidates: ${errors[0]}${errors.length > 1 ? ` (and ${errors.length - 1} more)` : ''}`
-        : 'Failed to load mock candidates. Please check that GEMINI_API_KEY is set correctly.'
-      setMockError(errorMsg)
-    } else if (errors.length > 0) {
-      setMockError(`Loaded ${successCount} candidates, but ${errors.length} failed. ${errors[0]}`)
-      router.push(`/job/${jobId}/swipe`)
-    } else {
-      // All succeeded
-      router.push(`/job/${jobId}/swipe`)
-    }
   }
 
   if (!currentJob) {
