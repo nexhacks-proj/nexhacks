@@ -37,7 +37,6 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
 
-      // Validate file type
       const validation = validateFileType(file)
       if (!validation.valid) {
         setError(validation.error || 'Invalid file type')
@@ -46,8 +45,6 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
 
       try {
         const text = await extractTextFromFile(file)
-
-        // Try to extract email from resume text
         const emailMatch = text.match(/[\w.-]+@[\w.-]+\.\w+/)
         const email = emailMatch ? emailMatch[0] : `candidate${Date.now()}@example.com`
 
@@ -59,25 +56,20 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
         }
 
         newResumes.push(newResume)
-
-        // Add to mock resumes pool
         addToMockResumes(newResume)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to read file'
         console.error('File upload error:', err)
         setError(`Failed to process ${file.name}: ${errorMessage}`)
-        // Continue with other files
       }
     }
 
-    // Auto-process uploaded resumes
     if (newResumes.length > 0) {
       await processResumesImmediately(newResumes)
     }
   }
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    // Let paste happen normally first
     setTimeout(async () => {
       const text = (e.target as HTMLTextAreaElement).value
       if (text.trim()) {
@@ -102,13 +94,8 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
       rawResume: resumeText
     }
 
-    // Add to mock resumes pool
     addToMockResumes(newResume)
-
-    // Clear manual text
     setManualText('')
-
-    // Auto-process pasted resume
     await processResumesImmediately([newResume])
   }
 
@@ -122,7 +109,6 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
     setProgress({ current: 0, total: resumesToProcess.length })
 
     try {
-      // Send all resumes in a single batch API call to avoid rate limiting
       const response = await fetch('/api/candidates/parse-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -133,50 +119,19 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
       })
 
       if (!response.ok) {
-        let errorMessage = 'Failed to parse resume'
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`
-        }
-        throw new Error(errorMessage)
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'Failed to parse resumes')
       }
 
       const data = await response.json()
-      return { resume, data }
-    }
 
-    const results = await Promise.allSettled(resumesToProcess.map(processOne))
-
-    for (const result of results) {
-      completed++
-      setProgress({ current: completed, total: resumesToProcess.length })
-
-      if (result.status === 'fulfilled') {
-        const { resume, data } = result.value
-        if (!data || !data.candidate) {
-          console.error('Invalid response data:', data)
-          setError(`Failed to parse ${resume.name}: Invalid response from server`)
-          return
-        }
+      for (const candidate of data.candidates) {
         const parsedCandidate: Candidate = {
           ...candidate,
           jobId: job.id,
           status: 'pending' as const
         }
         addCandidate(parsedCandidate)
-      } else {
-        const error = result.reason
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        console.error('Error processing resume:', error)
-        
-        // Try to get more specific error from API response
-        if (error instanceof Error && error.message.includes('Failed to parse')) {
-          setError(`Failed to parse resume: ${errorMessage}. Check console for details.`)
-        } else {
-          setError(`Failed to process resume: ${errorMessage}`)
-        }
       }
 
       setProgress({ current: resumesToProcess.length, total: resumesToProcess.length })
@@ -198,7 +153,6 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
     const processedIds: string[] = []
 
     try {
-      // Send all resumes in a single batch API call to avoid rate limiting
       const response = await fetch('/api/candidates/parse-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,19 +163,12 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
       })
 
       if (!response.ok) {
-        let errorMessage = 'Failed to parse resume'
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`
-        }
-        throw new Error(errorMessage)
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'Failed to parse resumes')
       }
 
       const data = await response.json()
 
-      // Add all parsed candidates to the store
       for (const candidate of data.candidates) {
         const parsedCandidate: Candidate = {
           ...candidate,
@@ -229,12 +176,7 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
           status: 'pending' as const
         }
         addCandidate(parsedCandidate)
-        processedIds.push(resume.id)
-      } else {
-        const error = result.reason
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        console.error('Error processing resume:', error)
-        setError(`Failed to process ${resume.name}: ${errorMessage}`)
+        processedIds.push(candidate.id)
       }
 
       setProgress({ current: resumes.length, total: resumes.length })
@@ -263,7 +205,7 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
           Resumes are processed immediately with Gemini AI
         </p>
         <p className="text-xs text-slate-400 mb-4">
-          Supports PDF, Word (.docx), and text files • Max 10MB
+          Supports PDF, Word (.docx), and text files
         </p>
 
         <div className="space-y-3">
@@ -276,7 +218,7 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
               className="hidden"
               disabled={isProcessing}
             />
-            <span className={`px-6 py-3 bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl cursor-pointer inline-block transition-colors text-base font-medium ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <span className={`px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl cursor-pointer inline-block transition-colors text-base font-medium ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
               {isProcessing ? 'Processing...' : 'Upload Resumes'}
             </span>
           </label>
@@ -372,20 +314,8 @@ export default function ResumeUploader({ job, onComplete }: ResumeUploaderProps)
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-danger mb-1">Upload Error</p>
-              <p className="text-sm text-danger/80 mb-2">{error}</p>
-              <details className="text-xs">
-                <summary className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                  Troubleshooting tips
-                </summary>
-                <ul className="list-disc list-inside mt-2 space-y-1 text-slate-500 dark:text-slate-400">
-                  <li>Supported formats: PDF, Word (.docx), and plain text (.txt)</li>
-                  <li>Check that your .env.local file has GEMINI_API_KEY set</li>
-                  <li>For PDFs: Make sure the file isn't password-protected</li>
-                  <li>For manual text: Paste or type directly, then click "Process Text"</li>
-                  <li>Check browser console (F12) for more detailed error messages</li>
-                </ul>
-              </details>
+              <p className="text-sm font-medium text-danger mb-1">Error</p>
+              <p className="text-sm text-danger/80">{error}</p>
             </div>
           </div>
         </div>
