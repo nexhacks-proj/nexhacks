@@ -27,8 +27,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error parsing candidate:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to parse resume'
     return NextResponse.json(
-      { error: 'Failed to parse resume' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
