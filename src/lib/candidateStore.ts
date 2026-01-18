@@ -1,11 +1,17 @@
 import { Candidate } from '@/types'
 import connectDB from './db'
 import CandidateModel from '@/models/Candidate'
+import { shouldUseMongoDB } from './storageConfig'
 
 /**
- * Save a candidate to MongoDB
+ * Save a candidate to MongoDB (only in production)
  */
 export async function saveCandidate(candidate: Candidate): Promise<void> {
+  if (!shouldUseMongoDB()) {
+    console.log('[candidateStore] Skipping MongoDB save (local dev mode - using localStorage)')
+    return
+  }
+  
   await connectDB()
   await CandidateModel.findOneAndUpdate(
     { id: candidate.id },
@@ -15,11 +21,16 @@ export async function saveCandidate(candidate: Candidate): Promise<void> {
 }
 
 /**
- * Save multiple candidates to MongoDB
+ * Save multiple candidates to MongoDB (only in production)
  */
 export async function saveCandidates(candidates: Candidate[]): Promise<void> {
   if (candidates.length === 0) {
     console.log('[candidateStore] No candidates to save')
+    return
+  }
+  
+  if (!shouldUseMongoDB()) {
+    console.log(`[candidateStore] Skipping MongoDB save for ${candidates.length} candidate(s) (local dev mode - using localStorage)`)
     return
   }
   

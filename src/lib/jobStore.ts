@@ -1,11 +1,17 @@
 import { Job } from '@/types'
 import connectDB from './db'
 import JobModel from '@/models/Job'
+import { shouldUseMongoDB } from './storageConfig'
 
 /**
- * Save a job to MongoDB
+ * Save a job to MongoDB (only in production)
  */
 export async function saveJob(job: Job): Promise<void> {
+  if (!shouldUseMongoDB()) {
+    console.log('[jobStore] Skipping MongoDB save (local dev mode - using localStorage)')
+    return
+  }
+  
   try {
     await connectDB()
     console.log(`[jobStore] Saving job "${job.title}" (${job.id}) to MongoDB...`)

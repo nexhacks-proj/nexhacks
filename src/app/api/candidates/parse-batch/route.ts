@@ -73,13 +73,6 @@ export async function POST(request: NextRequest) {
         aiSummary: 'AI parsing failed for this candidate. Please review manually.',
         status: 'pending' as const
       }
-    // Use batchParseResumes for optimized parallel processing
-    const parsedCandidates = await batchParseResumes(resumes, job)
-
-    // Remove jobId from results (it will be added on the client side)
-    const candidates = parsedCandidates.map(candidate => {
-      const { jobId, ...candidateWithoutJobId } = candidate
-      return candidateWithoutJobId
     })
 
     // Save all candidates to MongoDB

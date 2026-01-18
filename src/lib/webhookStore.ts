@@ -1,8 +1,14 @@
 import { Candidate } from '@/types'
 import connectDB from './db'
 import CandidateModel from '@/models/Candidate'
+import { shouldUseMongoDB } from './storageConfig'
 
 export async function addWebhookCandidate(jobId: string, candidate: Candidate): Promise<void> {
+  if (!shouldUseMongoDB()) {
+    console.log('[webhookStore] Skipping MongoDB save (local dev mode - webhooks not persisted)')
+    return
+  }
+  
   await connectDB()
   await CandidateModel.findOneAndUpdate(
     { id: candidate.id },
@@ -12,6 +18,10 @@ export async function addWebhookCandidate(jobId: string, candidate: Candidate): 
 }
 
 export async function getWebhookCandidates(jobId: string): Promise<Candidate[]> {
+  if (!shouldUseMongoDB()) {
+    return [] // Webhooks not persisted in local dev
+  }
+  
   await connectDB()
   const docs = await CandidateModel.find({ jobId }).lean()
   return docs.map(doc => ({
@@ -22,6 +32,10 @@ export async function getWebhookCandidates(jobId: string): Promise<Candidate[]> 
 }
 
 export async function getAllWebhookCandidates(): Promise<Candidate[]> {
+  if (!shouldUseMongoDB()) {
+    return [] // Webhooks not persisted in local dev
+  }
+  
   await connectDB()
   const docs = await CandidateModel.find({}).lean()
   return docs.map(doc => ({
