@@ -103,9 +103,10 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
     }
   }
 
-  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const handlePaste = async (e: React.ClipboardEvent) => {
     setTimeout(async () => {
-      const text = (e.target as HTMLTextAreaElement).value
+      const target = e.currentTarget as HTMLInputElement
+      const text = target?.value || ''
       if (text.trim()) {
         await handleManualSubmit(text)
       }
