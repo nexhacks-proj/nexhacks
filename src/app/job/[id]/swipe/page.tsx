@@ -176,7 +176,7 @@ export default function SwipePage() {
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                router.back()
+                router.push('/')
               }}
               className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95"
               type="button"

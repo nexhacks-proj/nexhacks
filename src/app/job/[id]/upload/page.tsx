@@ -68,7 +68,7 @@ export default function UploadCandidatesPage() {
           <IconButton
             edge="start"
             color="inherit"
-            onClick={() => router.back()}
+            onClick={() => router.push(`/job/${jobId}/swipe`)}
             sx={{ 
               mr: 2, 
               color: 'text.primary',

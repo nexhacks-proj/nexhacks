@@ -122,7 +122,7 @@ export default function DashboardPage() {
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
-                  router.back()
+                  router.push(`/job/${jobId}/swipe`)
                 }}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all active:scale-95"
                 type="button"
