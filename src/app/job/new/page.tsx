@@ -43,25 +43,49 @@ const SKILL_PATTERNS: { tag: string; patterns: RegExp[]; category: 'frontend' | 
   { tag: 'Next.js', patterns: [/\bnext\.?js\b/i, /\bnextjs\b/i], category: 'frontend' },
   { tag: 'Vue', patterns: [/\bvue\.?js\b/i, /\bvue\b/i], category: 'frontend' },
   { tag: 'Angular', patterns: [/\bangular\b/i], category: 'frontend' },
+  { tag: 'Svelte', patterns: [/\bsvelte\b/i], category: 'frontend' },
+  { tag: 'Tailwind CSS', patterns: [/\btailwind\b/i, /\btailwindcss\b/i], category: 'frontend' },
+  { tag: 'SASS', patterns: [/\bsass\b/i, /\bscss\b/i], category: 'frontend' },
+  { tag: 'Webpack', patterns: [/\bwebpack\b/i], category: 'frontend' },
+  { tag: 'Vite', patterns: [/\bvite\b/i], category: 'frontend' },
   { tag: 'TypeScript', patterns: [/\bts\b/i, /\btypescript\b/i], category: 'language' },
   { tag: 'JavaScript', patterns: [/\bjs\b/i, /\bjavascript\b/i], category: 'language' },
   // Backend
   { tag: 'Node.js', patterns: [/\bnode\.?js\b/i, /\bnode\b/i], category: 'backend' },
+  { tag: 'Express', patterns: [/\bexpress\b/i, /\bexpress\.?js\b/i], category: 'backend' },
   { tag: 'Python', patterns: [/\bpy\b/i, /\bpython\b/i], category: 'language' },
+  { tag: 'Django', patterns: [/\bdjango\b/i], category: 'backend' },
+  { tag: 'Flask', patterns: [/\bflask\b/i], category: 'backend' },
+  { tag: 'FastAPI', patterns: [/\bfastapi\b/i], category: 'backend' },
   { tag: 'Go', patterns: [/\bgolang\b/i, /\bgo\b/i], category: 'language' },
   { tag: 'Java', patterns: [/\bjava\b/i], category: 'language' },
+  { tag: 'Spring', patterns: [/\bspring\b/i, /\bspringboot\b/i], category: 'backend' },
   { tag: 'Ruby', patterns: [/\bruby\b/i], category: 'language' },
+  { tag: 'Rails', patterns: [/\brails\b/i, /\bruby on rails\b/i], category: 'backend' },
   { tag: 'Rust', patterns: [/\brust\b/i], category: 'language' },
+  { tag: 'PHP', patterns: [/\bphp\b/i], category: 'language' },
+  { tag: 'C#', patterns: [/\bc#\b/i, /\bcsharp\b/i], category: 'language' },
+  { tag: '.NET', patterns: [/\b\.net\b/i, /\bdotnet\b/i, /\basp\.net\b/i], category: 'backend' },
+  { tag: 'GraphQL', patterns: [/\bgraphql\b/i, /\bgql\b/i], category: 'backend' },
+  { tag: 'REST API', patterns: [/\brest\b/i, /\brestful\b/i, /\brest api\b/i], category: 'backend' },
   // Database
   { tag: 'PostgreSQL', patterns: [/\bpostgres\b/i, /\bpostgresql\b/i], category: 'database' },
   { tag: 'MongoDB', patterns: [/\bmongo\b/i, /\bmongodb\b/i], category: 'database' },
   { tag: 'Redis', patterns: [/\bredis\b/i], category: 'database' },
   { tag: 'MySQL', patterns: [/\bmysql\b/i], category: 'database' },
+  { tag: 'SQLite', patterns: [/\bsqlite\b/i], category: 'database' },
+  { tag: 'DynamoDB', patterns: [/\bdynamodb\b/i], category: 'database' },
+  { tag: 'Elasticsearch', patterns: [/\belasticsearch\b/i], category: 'database' },
   // DevOps/Cloud
   { tag: 'AWS', patterns: [/\baws\b/i, /\bamazon web services\b/i], category: 'devops' },
+  { tag: 'Azure', patterns: [/\bazure\b/i, /\bmicrosoft azure\b/i], category: 'devops' },
+  { tag: 'GCP', patterns: [/\bgcp\b/i, /\bgoogle cloud\b/i, /\bgoogle cloud platform\b/i], category: 'devops' },
   { tag: 'Docker', patterns: [/\bdocker\b/i], category: 'devops' },
   { tag: 'Kubernetes', patterns: [/\bk8s\b/i, /\bkubernetes\b/i], category: 'devops' },
-  { tag: 'GraphQL', patterns: [/\bgraphql\b/i, /\bgql\b/i], category: 'backend' },
+  { tag: 'Terraform', patterns: [/\bterraform\b/i], category: 'devops' },
+  { tag: 'Ansible', patterns: [/\bansible\b/i], category: 'devops' },
+  { tag: 'Jenkins', patterns: [/\bjenkins\b/i], category: 'devops' },
+  { tag: 'GitHub Actions', patterns: [/\bgithub actions\b/i, /\bgh actions\b/i], category: 'devops' },
   { tag: 'Git', patterns: [/\bgit\b/i], category: 'devops' },
   { tag: 'CI/CD', patterns: [/\bcicd\b/i, /\bci\/cd\b/i, /\bcontinuous integration\b/i], category: 'devops' },
 ]
@@ -80,6 +104,7 @@ export default function NewJobPage() {
   const [portfolioRequired, setPortfolioRequired] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showTagCategories, setShowTagCategories] = useState(false)
+  const [showMoreTags, setShowMoreTags] = useState(false)
 
   const lastDetectedSkills = useRef<Set<string>>(new Set())
 
@@ -423,26 +448,44 @@ export default function NewJobPage() {
                     })}
                   </Box>
                 ) : (
-                  // Show all tags in one list
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {uniqueTags.map((tag) => (
-                      <Chip
-                        key={tag}
-                        label={tag}
-                        onClick={() => handleAddTag(tag)}
-                        variant="outlined"
+                  // Show all tags in one list - limit to first 23 with show more
+                  <Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {(showMoreTags ? uniqueTags : uniqueTags.slice(0, 23)).map((tag) => (
+                        <Chip
+                          key={tag}
+                          label={tag}
+                          onClick={() => handleAddTag(tag)}
+                          variant="outlined"
+                          size="small"
+                          sx={{ 
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              backgroundColor: 'primary.light',
+                              color: 'primary.contrastText',
+                              borderColor: 'primary.main',
+                            },
+                          }}
+                        />
+                      ))}
+                    </Box>
+                    {uniqueTags.length > 23 && (
+                      <Button
                         size="small"
+                        onClick={() => setShowMoreTags(!showMoreTags)}
                         sx={{ 
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
+                          mt: 1.5, 
+                          textTransform: 'none',
+                          color: 'primary.main',
                           '&:hover': {
-                            backgroundColor: 'primary.light',
-                            color: 'primary.contrastText',
-                            borderColor: 'primary.main',
+                            backgroundColor: 'action.hover',
                           },
                         }}
-                      />
-                    ))}
+                      >
+                        {showMoreTags ? 'Show Less' : `Show More (${uniqueTags.length - 23} more)`}
+                      </Button>
+                    )}
                   </Box>
                 )}
               </Box>

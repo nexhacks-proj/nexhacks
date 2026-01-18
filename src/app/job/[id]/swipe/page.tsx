@@ -172,17 +172,22 @@ export default function SwipePage() {
       <header className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-50 pt-safe">
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                router.push('/')
-              }}
-              className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95"
-              type="button"
-            >
-              <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-300" />
-            </button>
+            {/* Left: Back button - positioned to the side */}
+            <div className="flex-shrink-0 w-12 flex justify-start">
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  router.push('/')
+                }}
+                className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95"
+                type="button"
+              >
+                <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+              </button>
+            </div>
+            
+            {/* Center: Title */}
             <div className="text-center flex-1 px-2">
               <h1 className="font-semibold text-slate-900 dark:text-white truncate">
                 {currentJob.title}
@@ -191,7 +196,9 @@ export default function SwipePage() {
                 {pendingCandidates.length} remaining
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            
+            {/* Right: Action buttons - same width as left for symmetry */}
+            <div className="flex-shrink-0 w-12 flex items-center justify-end gap-2">
               <button
                 onClick={(e) => {
                   e.preventDefault()
@@ -204,19 +211,17 @@ export default function SwipePage() {
               >
                 <Upload className="w-5 h-5 text-slate-600 dark:text-slate-300" />
               </button>
-              <div className="flex gap-2">
               <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    router.push(`/job/${jobId}/dashboard`)
-                  }}
-                  className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95"
-                  type="button"
-                >
-                  <Users className="w-6 h-6 text-slate-600 dark:text-slate-300" />
-                </button>
-            </div>
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  router.push(`/job/${jobId}/dashboard`)
+                }}
+                className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95"
+                type="button"
+              >
+                <Users className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+              </button>
             </div>
           </div>
 
@@ -335,22 +340,6 @@ export default function SwipePage() {
               <X className="w-10 h-10 sm:w-12 sm:h-12 text-danger" />
             </button>
 
-            {/* Star */}
-            <button
-              onClick={(e) => {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'swipe/page.tsx:265',message:'Star button clicked',data:{isAnimating,pendingCount:pendingCandidates.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-                // #endregion
-                e.preventDefault()
-                e.stopPropagation()
-                handleStar()
-              }}
-              disabled={isAnimating}
-              className="p-4 sm:p-5 bg-white dark:bg-slate-800 rounded-full shadow-lg active:scale-95 transition-transform border-2 border-warning touch-manipulation"
-            >
-              <Star className="w-7 h-7 sm:w-8 sm:h-8 text-warning" />
-            </button>
-
             {/* Interested */}
             <button
               onClick={(e) => {
@@ -365,6 +354,22 @@ export default function SwipePage() {
               className="p-5 sm:p-6 bg-white dark:bg-slate-800 rounded-full shadow-lg active:scale-95 transition-transform border-2 border-success touch-manipulation"
             >
               <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-success" />
+            </button>
+
+            {/* Star */}
+            <button
+              onClick={(e) => {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'swipe/page.tsx:265',message:'Star button clicked',data:{isAnimating,pendingCount:pendingCandidates.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
+                e.preventDefault()
+                e.stopPropagation()
+                handleStar()
+              }}
+              disabled={isAnimating}
+              className="p-4 sm:p-5 bg-white dark:bg-slate-800 rounded-full shadow-lg active:scale-95 transition-transform border-2 border-warning touch-manipulation"
+            >
+              <Star className="w-7 h-7 sm:w-8 sm:h-8 text-warning" />
             </button>
           </div>
 
