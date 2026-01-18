@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { Candidate, Job } from '@/types'
+import { AIBucket, Candidate, Job } from '@/types'
 
 // Cerebras API - ultra-fast inference
 const CEREBRAS_API_URL = 'https://api.cerebras.ai/v1/chat/completions'
@@ -281,6 +281,7 @@ for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
             topStrengths: ['Unable to parse resume'],
             standoutProject: 'Resume parsing failed',
             aiSummary: 'AI parsing failed for this candidate.',
+            aiBucket: 'average',
             status: 'pending'
               })
             }
