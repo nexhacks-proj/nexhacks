@@ -1,5 +1,5 @@
 import { Job } from '@/types'
-import connectDB from './db'
+import connectDB, { MONGODB_ENABLED } from './db'
 import JobModel from '@/models/Job'
 import { shouldUseMongoDB } from './storageConfig'
 
@@ -31,7 +31,7 @@ export async function saveJob(job: Job): Promise<void> {
  * Get job by ID from database
  */
 export async function getJobById(jobId: string): Promise<Job | null> {
-  if (!shouldUseMongoDB()) {
+  if (!MONGODB_ENABLED || !JobModel) {
     return null
   }
   
@@ -49,13 +49,13 @@ export async function getJobById(jobId: string): Promise<Job | null> {
  * Get all jobs from database
  */
 export async function getAllJobs(): Promise<Job[]> {
-  if (!shouldUseMongoDB()) {
+  if (!MONGODB_ENABLED || !JobModel) {
     return []
   }
   
   await connectDB()
   const docs = await JobModel.find({}).lean()
-  return docs.map(doc => ({
+  return docs.map((doc: any) => ({
     ...doc,
     createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date()
   })) as Job[]

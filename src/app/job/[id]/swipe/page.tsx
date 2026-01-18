@@ -8,6 +8,7 @@ import CandidateDetail from '@/components/CandidateDetail'
 import LoadingOverlay from '@/components/LoadingOverlay'
 import { Candidate } from '@/types'
 import { ArrowLeft, RotateCcw, X, Star, Heart, Users, CheckCircle, XCircle, Upload } from 'lucide-react'
+import { playRejectSound, playSuccessSound, playStarSound, playUndoSound } from '@/lib/sounds'
 
 export default function SwipePage() {
   const router = useRouter()
@@ -77,6 +78,13 @@ export default function SwipePage() {
   const handleSwipe = async (direction: 'left' | 'right', feedback?: string) => {
     if (isAnimating || pendingCandidates.length === 0) return
 
+    // Play sound effects
+    if (direction === 'left') {
+      playRejectSound()
+    } else {
+      playSuccessSound()
+    }
+
     setIsAnimating(true)
     const candidate = pendingCandidates[0]
 
@@ -101,11 +109,13 @@ export default function SwipePage() {
   const handleStar = () => {
     if (pendingCandidates.length === 0) return
     const candidate = pendingCandidates[0]
+    playStarSound()
     swipeCandidate(candidate.id, 'starred')
   }
 
   const handleUndo = () => {
     if (swipeHistory.length > 0) {
+      playUndoSound()
       undoLastSwipe()
     }
   }

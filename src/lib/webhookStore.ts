@@ -24,7 +24,7 @@ export async function getWebhookCandidates(jobId: string): Promise<Candidate[]> 
   
   await connectDB()
   const docs = await CandidateModel.find({ jobId }).lean()
-  return docs.map(doc => ({
+  return docs.map((doc: any) => ({
     ...doc,
     createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
     swipedAt: doc.swipedAt ? new Date(doc.swipedAt) : undefined
@@ -38,7 +38,7 @@ export async function getAllWebhookCandidates(): Promise<Candidate[]> {
   
   await connectDB()
   const docs = await CandidateModel.find({}).lean()
-  return docs.map(doc => ({
+  return docs.map((doc: any) => ({
     ...doc,
     createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
     swipedAt: doc.swipedAt ? new Date(doc.swipedAt) : undefined

@@ -59,7 +59,8 @@ async function testDatabase() {
       topStrengths: ['Strong React skills'],
       standoutProject: 'Test project',
       aiSummary: 'Test candidate summary',
-      status: 'pending'
+      aiBucket: 'average' as const,
+      status: 'pending' as const
     }
 
     const candidateDoc = await CandidateModel.findOneAndUpdate(
