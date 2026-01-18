@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useStore } from '@/store/useStore'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
@@ -304,19 +305,21 @@ export default function Home() {
         {/* Action Buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 6 }}>
           <Button
+            component={Link}
+            href="/job/new"
             variant="contained"
             size="large"
             endIcon={<ArrowForward />}
-            onClick={(e) => {
-              e.preventDefault()
-              try {
-                router.push('/job/new')
-              } catch (error) {
-                console.error('Navigation error:', error)
-                window.location.href = '/job/new'
-              }
+            sx={{ 
+              px: 4, 
+              py: 1.5,
+              transition: 'all 0.2s ease-in-out',
+              textDecoration: 'none',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 4,
+              },
             }}
-            sx={{ px: 4, py: 1.5 }}
           >
             Create New Job
           </Button>
@@ -658,12 +661,14 @@ export default function Home() {
               Create your first job posting to start screening candidates
             </Typography>
             <Button
+              component={Link}
+              href="/job/new"
               variant="contained"
               size="large"
               endIcon={<ArrowForward />}
-              onClick={() => router.push('/job/new')}
               sx={{
                 transition: 'all 0.2s ease-in-out',
+                textDecoration: 'none',
                 '&:hover': {
                   transform: 'translateY(-2px)',
                   boxShadow: 4,

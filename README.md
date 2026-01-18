@@ -18,7 +18,7 @@ A mobile-first web app that helps early-stage startup founders screen job applic
 - Tailwind CSS
 - Framer Motion (swipe animations)
 - Zustand (state management)
-- Cerebras AI (resume parsing)
+- Cerebras AI - GPT OSS 120B (resume parsing)
 
 ## Getting Started
 

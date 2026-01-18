@@ -132,10 +132,19 @@ export default function SwipePage() {
 
   // Load job on mount
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'swipe/page.tsx:134',message:'useEffect checking job',data:{jobId,jobsCount:jobs.length,jobIds:jobs.map(j=>j.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     const job = jobs.find(j => j.id === jobId)
     if (job) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'swipe/page.tsx:137',message:'Job found, setting currentJob',data:{jobId,jobTitle:job.title},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       setCurrentJob(job)
     } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'swipe/page.tsx:139',message:'Job NOT found, redirecting to homepage',data:{jobId,jobsCount:jobs.length,jobIds:jobs.map(j=>j.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       router.push('/')
     }
   }, [jobId, jobs, setCurrentJob, router])
