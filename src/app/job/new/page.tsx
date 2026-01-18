@@ -224,7 +224,7 @@ export default function NewJobPage() {
           <IconButton 
             edge="start" 
             color="inherit" 
-            onClick={() => router.push('/')} 
+            onClick={() => router.back()} 
             sx={{ 
               mr: 2, 
               color: 'text.primary',
