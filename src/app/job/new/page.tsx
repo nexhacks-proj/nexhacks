@@ -3,16 +3,31 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStore } from '@/store/useStore'
-import { ArrowLeft, Plus, X, Briefcase } from 'lucide-react'
+import AppBar from '@mui/material/AppBar'
+import Toolbar from '@mui/material/Toolbar'
+import IconButton from '@mui/material/IconButton'
+import Typography from '@mui/material/Typography'
+import Container from '@mui/material/Container'
+import TextField from '@mui/material/TextField'
+import Button from '@mui/material/Button'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Chip from '@mui/material/Chip'
+import Checkbox from '@mui/material/Checkbox'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid2'
+import InputAdornment from '@mui/material/InputAdornment'
+import { ArrowBack, Add, Work } from '@mui/icons-material'
 import { ExperienceLevel, Job } from '@/types'
 
-const SKILL_PATTERNS: { tag: string, patterns: RegExp[] }[] = [
+const SKILL_PATTERNS: { tag: string; patterns: RegExp[] }[] = [
   { tag: 'React', patterns: [/\breact\.?js\b/i, /\breact\b/i] },
   { tag: 'TypeScript', patterns: [/\bts\b/i, /\btypescript\b/i] },
   { tag: 'JavaScript', patterns: [/\bjs\b/i, /\bjavascript\b/i] },
   { tag: 'Node.js', patterns: [/\bnode\.?js\b/i, /\bnode\b/i] },
   { tag: 'Python', patterns: [/\bpy\b/i, /\bpython\b/i] },
-  { tag: 'Go', patterns: [/\bgolang\b/i, /\bgo\b/i] }, // 'go' is common word, stricter boundary usually needed but \bgo\b is okay
+  { tag: 'Go', patterns: [/\bgolang\b/i, /\bgo\b/i] },
   { tag: 'Java', patterns: [/\bjava\b/i] },
   { tag: 'PostgreSQL', patterns: [/\bpostgres\b/i, /\bpostgresql\b/i] },
   { tag: 'MongoDB', patterns: [/\bmongo\b/i, /\bmongodb\b/i] },
@@ -24,7 +39,7 @@ const SKILL_PATTERNS: { tag: string, patterns: RegExp[] }[] = [
   { tag: 'Angular', patterns: [/\bangular\b/i] },
   { tag: 'Ruby', patterns: [/\bruby\b/i] },
   { tag: 'Rust', patterns: [/\brust\b/i] },
-  { tag: 'GraphQL', patterns: [/\bgraphql\b/i, /\bgql\b/i] }
+  { tag: 'GraphQL', patterns: [/\bgraphql\b/i, /\bgql\b/i] },
 ]
 
 export default function NewJobPage() {
@@ -40,7 +55,6 @@ export default function NewJobPage() {
   const [startupExperience, setStartupExperience] = useState(false)
   const [portfolioRequired, setPortfolioRequired] = useState(false)
 
-  // Track which skills were auto-added by the system so we can remove them if the user deletes the text
   const lastDetectedSkills = useRef<Set<string>>(new Set())
 
   const handleAddTag = (tag: string) => {
@@ -51,42 +65,33 @@ export default function NewJobPage() {
   }
 
   const handleRemoveTag = (tag: string) => {
-    setTechStack(techStack.filter(t => t !== tag))
+    setTechStack(techStack.filter((t) => t !== tag))
   }
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newDescription = e.target.value
     setDescription(newDescription)
 
-    // 1. Detect current skills in text
     const currentDetected = new Set<string>()
     SKILL_PATTERNS.forEach(({ tag, patterns }) => {
-      if (patterns.some(p => p.test(newDescription))) {
+      if (patterns.some((p) => p.test(newDescription))) {
         currentDetected.add(tag)
       }
     })
 
-    // 2. Identify what was added and what was removed relative to LAST detection
     const currentArray = Array.from(currentDetected)
     const lastArray = Array.from(lastDetectedSkills.current)
-    
-    const newlyDetected = currentArray.filter(tag => !lastDetectedSkills.current.has(tag))
-    const noLongerDetected = lastArray.filter(tag => !currentDetected.has(tag))
 
-    // 3. Update techStack state
-    setTechStack(prevStack => {
+    const newlyDetected = currentArray.filter((tag) => !lastDetectedSkills.current.has(tag))
+    const noLongerDetected = lastArray.filter((tag) => !currentDetected.has(tag))
+
+    setTechStack((prevStack) => {
       const newStack = new Set(prevStack)
-      
-      // Add new
-      newlyDetected.forEach(tag => newStack.add(tag))
-      
-      // Remove old (ONLY if it's currently in the stack - protects against user manually removing it already)
-      noLongerDetected.forEach(tag => newStack.delete(tag))
-      
+      newlyDetected.forEach((tag) => newStack.add(tag))
+      noLongerDetected.forEach((tag) => newStack.delete(tag))
       return Array.from(newStack)
     })
 
-    // 4. Update ref for next time
     lastDetectedSkills.current = currentDetected
   }
 
@@ -95,7 +100,6 @@ export default function NewJobPage() {
     if (!title.trim()) return
 
     try {
-      // Save job to MongoDB via API
       const response = await fetch('/api/jobs/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,8 +110,8 @@ export default function NewJobPage() {
           experienceLevel,
           visaSponsorship,
           startupExperiencePreferred: startupExperience,
-          portfolioRequired
-        })
+          portfolioRequired,
+        }),
       })
 
       if (!response.ok) {
@@ -118,23 +122,20 @@ export default function NewJobPage() {
       const data = await response.json()
       const job = data.job
 
-      // Convert Date string back to Date object if needed
       const jobWithDates: Job = {
         ...job,
-        createdAt: job.createdAt ? new Date(job.createdAt) : new Date()
+        createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
       }
 
-      // Also save to Zustand store for local state with the DB job ID
       const currentJobs = useStore.getState().jobs
       useStore.setState({
         jobs: [...currentJobs, jobWithDates],
-        currentJob: jobWithDates
+        currentJob: jobWithDates,
       })
 
       router.push(`/job/${job.id}/upload`)
     } catch (error) {
       console.error('Error creating job:', error)
-      // Fallback: still create locally if API fails
       const job = createJob({
         title: title.trim(),
         description: description.trim(),
@@ -142,218 +143,224 @@ export default function NewJobPage() {
         experienceLevel,
         visaSponsorship,
         startupExperiencePreferred: startupExperience,
-        portfolioRequired
+        portfolioRequired,
       })
       router.push(`/job/${job.id}/upload`)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-          </button>
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Create New Job
-          </h1>
-        </div>
-      </header>
+  const uniqueTags = Array.from(new Set(SKILL_PATTERNS.map((p) => p.tag))).filter(
+    (tag) => !techStack.includes(tag)
+  )
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+  return (
+    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+      {/* Header */}
+      <AppBar position="sticky" elevation={1} sx={{ backgroundColor: 'background.paper' }}>
+        <Toolbar sx={{ maxWidth: 'md', width: '100%', mx: 'auto', px: { xs: 2, sm: 3 } }}>
+          <IconButton edge="start" color="inherit" onClick={() => router.back()} sx={{ mr: 2, color: 'text.primary' }}>
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h6" component="div" sx={{ color: 'text.primary', fontWeight: 500 }}>
+            Create New Job
+          </Typography>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="md" sx={{ py: 3, px: { xs: 2, sm: 3 } }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Role Title */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
-              Role Title *
-            </label>
-            <div className="relative">
-              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
+          <Card elevation={2}>
+            <CardContent sx={{ p: 3 }}>
+              <TextField
+                fullWidth
+                required
+                label="Role Title"
+                placeholder="e.g., Senior Full-Stack Engineer"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., Senior Full-Stack Engineer"
-                className="w-full pl-10 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow"
-                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Work color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Job Description */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
-              Job Description
-            </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-              We'll automatically detect tech stack skills as you type.
-            </p>
-            <textarea
-              value={description}
-              onChange={handleDescriptionChange}
-              placeholder="e.g. We are looking for a Senior React developer with Node.js experience..."
-              className="w-full h-32 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow resize-y"
-            />
-          </div>
+          <Card elevation={2}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                We'll automatically detect tech stack skills as you type.
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={6}
+                label="Job Description"
+                placeholder="e.g. We are looking for a Senior React developer with Node.js experience..."
+                value={description}
+                onChange={handleDescriptionChange}
+                sx={{ mt: 2 }}
+              />
+            </CardContent>
+          </Card>
 
           {/* Tech Stack */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
-              Required Tech Stack
-            </label>
+          <Card elevation={2}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="body2" fontWeight={500} gutterBottom sx={{ mb: 2 }}>
+                Required Tech Stack
+              </Typography>
 
-            {/* Selected Tags */}
-            {techStack.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {techStack.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full text-sm"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="hover:text-primary-900 dark:hover:text-primary-100"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+              {/* Selected Tags */}
+              {techStack.length > 0 && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  {techStack.map((tag) => (
+                    <Chip
+                      key={tag}
+                      label={tag}
+                      onDelete={() => handleRemoveTag(tag)}
+                      color="primary"
+                      size="small"
+                    />
+                  ))}
+                </Box>
+              )}
 
-            {/* Common Tags - using helper to get list of tags from patterns */ }
-            <div className="flex flex-wrap gap-2 mb-4">
-              {(() => {
-                 // Get unique tags from patterns
-                 const uniqueTags = Array.from(new Set(SKILL_PATTERNS.map(p => p.tag)))
-                 return uniqueTags.filter(tag => !techStack.includes(tag)).map((tag) => (
-                  <button
+              {/* Common Tags */}
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                {uniqueTags.map((tag) => (
+                  <Chip
                     key={tag}
-                    type="button"
+                    label={tag}
                     onClick={() => handleAddTag(tag)}
-                    className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                  >
-                    {tag}
-                  </button>
-                ))
-              })()}
-            </div>
+                    variant="outlined"
+                    size="small"
+                    sx={{ cursor: 'pointer' }}
+                  />
+                ))}
+              </Box>
 
-            {/* Custom Tag Input */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={customTag}
-                onChange={(e) => setCustomTag(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleAddTag(customTag)
-                  }
-                }}
-                placeholder="Add custom technology..."
-                className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => handleAddTag(customTag)}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+              {/* Custom Tag Input */}
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Add custom technology..."
+                  value={customTag}
+                  onChange={(e) => setCustomTag(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAddTag(customTag)
+                    }
+                  }}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={() => handleAddTag(customTag)}
+                  startIcon={<Add />}
+                  size="small"
+                  sx={{ minWidth: 48 }}
+                >
+                  Add
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
 
           {/* Experience Level */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-3">
-              Experience Level
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { value: 'none' as ExperienceLevel, label: 'Entry Level', desc: '0 years' },
-                { value: '1-3' as ExperienceLevel, label: 'Mid Level', desc: '1-3 years' },
-                { value: '3+' as ExperienceLevel, label: 'Senior', desc: '3+ years' }
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setExperienceLevel(option.value)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    experienceLevel === option.value
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                      : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
-                  }`}
-                >
-                  <span className={`block font-medium ${
-                    experienceLevel === option.value
-                      ? 'text-primary-700 dark:text-primary-300'
-                      : 'text-slate-700 dark:text-slate-200'
-                  }`}>
-                    {option.label}
-                  </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    {option.desc}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <Card elevation={2}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="body2" fontWeight={500} gutterBottom sx={{ mb: 2 }}>
+                Experience Level
+              </Typography>
+              <Grid container spacing={1.5}>
+                {[
+                  { value: 'none' as ExperienceLevel, label: 'Entry Level', desc: '0 years' },
+                  { value: '1-3' as ExperienceLevel, label: 'Mid Level', desc: '1-3 years' },
+                  { value: '3+' as ExperienceLevel, label: 'Senior', desc: '3+ years' },
+                ].map((option) => (
+                  <Grid size={4} key={option.value}>
+                    <Button
+                      fullWidth
+                      variant={experienceLevel === option.value ? 'contained' : 'outlined'}
+                      onClick={() => setExperienceLevel(option.value)}
+                      sx={{
+                        py: 2,
+                        flexDirection: 'column',
+                        gap: 0.5,
+                        textTransform: 'none',
+                      }}
+                    >
+                      <Typography variant="body2" fontWeight={500}>
+                        {option.label}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.desc}
+                      </Typography>
+                    </Button>
+                  </Grid>
+                ))}
+              </Grid>
+            </CardContent>
+          </Card>
 
           {/* Preferences */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              Preferences
-            </h3>
-
-            <label className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg cursor-pointer">
-              <span className="text-slate-700 dark:text-slate-200">Visa sponsorship allowed</span>
-              <input
-                type="checkbox"
-                checked={visaSponsorship}
-                onChange={(e) => setVisaSponsorship(e.target.checked)}
-                className="w-5 h-5 rounded border-slate-300 text-primary-500 focus:ring-primary-500"
-              />
-            </label>
-
-            <label className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg cursor-pointer">
-              <span className="text-slate-700 dark:text-slate-200">Startup experience preferred</span>
-              <input
-                type="checkbox"
-                checked={startupExperience}
-                onChange={(e) => setStartupExperience(e.target.checked)}
-                className="w-5 h-5 rounded border-slate-300 text-primary-500 focus:ring-primary-500"
-              />
-            </label>
-
-            <label className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg cursor-pointer">
-              <span className="text-slate-700 dark:text-slate-200">Portfolio required</span>
-              <input
-                type="checkbox"
-                checked={portfolioRequired}
-                onChange={(e) => setPortfolioRequired(e.target.checked)}
-                className="w-5 h-5 rounded border-slate-300 text-primary-500 focus:ring-primary-500"
-              />
-            </label>
-          </div>
+          <Card elevation={2}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="body2" fontWeight={500} gutterBottom sx={{ mb: 2 }}>
+                Preferences
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={visaSponsorship}
+                      onChange={(e) => setVisaSponsorship(e.target.checked)}
+                    />
+                  }
+                  label="Visa sponsorship allowed"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={startupExperience}
+                      onChange={(e) => setStartupExperience(e.target.checked)}
+                    />
+                  }
+                  label="Startup experience preferred"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={portfolioRequired}
+                      onChange={(e) => setPortfolioRequired(e.target.checked)}
+                    />
+                  }
+                  label="Portfolio required"
+                />
+              </Box>
+            </CardContent>
+          </Card>
 
           {/* Submit Button */}
-          <button
+          <Button
             type="submit"
+            variant="contained"
+            size="large"
+            fullWidth
             disabled={!title.trim()}
-            className="w-full py-4 bg-primary-500 hover:bg-primary-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors"
+            sx={{ py: 1.5 }}
           >
             Create Job & Start Reviewing
-          </button>
-        </form>
-      </main>
-    </div>
+          </Button>
+        </Box>
+      </Container>
+    </Box>
   )
 }

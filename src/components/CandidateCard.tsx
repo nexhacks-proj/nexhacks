@@ -2,8 +2,18 @@
 
 import { useState } from 'react'
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Typography from '@mui/material/Typography'
+import Chip from '@mui/material/Chip'
+import IconButton from '@mui/material/IconButton'
+import TextField from '@mui/material/TextField'
+import Box from '@mui/material/Box'
+import Paper from '@mui/material/Paper'
+import Avatar from '@mui/material/Avatar'
+import Divider from '@mui/material/Divider'
+import { Star, Check, Close, Person, Work, AutoAwesome } from '@mui/icons-material'
 import { Candidate } from '@/types'
-import { Star, Check, X, User, Briefcase, Sparkles } from 'lucide-react'
 
 interface CandidateCardProps {
   candidate: Candidate
@@ -18,7 +28,7 @@ export default function CandidateCard({
   onSwipe,
   onStar,
   onTap,
-  isTop
+  isTop,
 }: CandidateCardProps) {
   const [exitDirection, setExitDirection] = useState<'left' | 'right' | null>(null)
   const [feedbackText, setFeedbackText] = useState('')
@@ -27,12 +37,11 @@ export default function CandidateCard({
   const rotate = useTransform(x, [-200, 200], [-20, 20])
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0])
 
-  // Visual feedback colors
   const leftIndicatorOpacity = useTransform(x, [-100, 0], [1, 0])
   const rightIndicatorOpacity = useTransform(x, [0, 100], [0, 1])
 
   const handleDragEnd = (_: any, info: PanInfo) => {
-    const threshold = 80 // Lower threshold for mobile
+    const threshold = 80
     if (info.offset.x > threshold) {
       setExitDirection('right')
       onSwipe('right', feedbackText)
@@ -44,8 +53,15 @@ export default function CandidateCard({
 
   return (
     <motion.div
-      className={`absolute w-full h-full ${isTop ? 'z-10' : 'z-0'}`}
-      style={{ x, rotate, opacity }}
+      style={{
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        zIndex: isTop ? 10 : 0,
+        x,
+        rotate,
+        opacity,
+      }}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.7}
@@ -64,131 +80,294 @@ export default function CandidateCard({
         }
       }}
     >
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden mx-2 sm:mx-4 cursor-grab active:cursor-grabbing h-full flex flex-col touch-manipulation select-none">
+      <Card
+        elevation={8}
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          mx: { xs: 1, sm: 2 },
+          cursor: isTop ? 'grab' : 'default',
+          '&:active': {
+            cursor: isTop ? 'grabbing' : 'default',
+          },
+          touchAction: 'pan-y',
+          userSelect: 'none',
+        }}
+      >
         {/* Swipe Indicators */}
         <motion.div
-          className="absolute inset-0 bg-danger/20 rounded-2xl flex items-center justify-center pointer-events-none z-20"
-          style={{ opacity: leftIndicatorOpacity }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(211, 47, 47, 0.2)',
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            zIndex: 20,
+            opacity: leftIndicatorOpacity,
+          }}
         >
-          <div className="bg-danger text-white p-4 rounded-full shadow-lg">
-            <X className="w-12 h-12 sm:w-14 sm:h-14" />
-          </div>
+          <Paper
+            elevation={8}
+            sx={{
+              p: 2,
+              backgroundColor: 'error.main',
+              color: 'white',
+              borderRadius: '50%',
+            }}
+          >
+            <Close sx={{ fontSize: { xs: 48, sm: 56 } }} />
+          </Paper>
         </motion.div>
         <motion.div
-          className="absolute inset-0 bg-success/20 rounded-2xl flex items-center justify-center pointer-events-none z-20"
-          style={{ opacity: rightIndicatorOpacity }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(46, 125, 50, 0.2)',
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            zIndex: 20,
+            opacity: rightIndicatorOpacity,
+          }}
         >
-          <div className="bg-success text-white p-4 rounded-full shadow-lg">
-            <Check className="w-12 h-12 sm:w-14 sm:h-14" />
-          </div>
+          <Paper
+            elevation={8}
+            sx={{
+              p: 2,
+              backgroundColor: 'success.main',
+              color: 'white',
+              borderRadius: '50%',
+            }}
+          >
+            <Check sx={{ fontSize: { xs: 48, sm: 56 } }} />
+          </Paper>
         </motion.div>
 
         {/* Card Header */}
-        <div className="bg-gradient-to-br from-primary-500 to-primary-600 p-4 sm:p-6 text-white flex-shrink-0">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="w-6 h-6 sm:w-7 sm:h-7" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg sm:text-xl font-bold truncate">{candidate.name}</h2>
-                <div className="flex items-center gap-1 text-primary-100 text-sm">
-                  <Briefcase className="w-4 h-4 flex-shrink-0" />
-                  <span>{candidate.yearsOfExperience} years exp.</span>
-                </div>
-              </div>
-            </div>
-            <button
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #1976d2, #1565c0)',
+            p: { xs: 2, sm: 3 },
+            color: 'white',
+            flexShrink: 0,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
+              <Avatar
+                sx={{
+                  width: { xs: 48, sm: 56 },
+                  height: { xs: 48, sm: 56 },
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                }}
+              >
+                <Person sx={{ fontSize: { xs: 24, sm: 28 } }} />
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {candidate.name}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                  <Work sx={{ fontSize: 16 }} />
+                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                    {candidate.yearsOfExperience} years exp.
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+            <IconButton
               onClick={(e) => {
                 e.stopPropagation()
                 onStar()
               }}
-              className="p-3 -m-1 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors flex-shrink-0"
+              sx={{
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                },
+              }}
             >
-              <Star className="w-6 h-6" />
-            </button>
-          </div>
+              <Star />
+            </IconButton>
+          </Box>
 
           {/* Skills Tags */}
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3 sm:mt-4">
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
             {candidate.skills.slice(0, 4).map((skill) => (
-              <span
+              <Chip
                 key={skill}
-                className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium"
-              >
-                {skill}
-              </span>
+                label={skill}
+                size="small"
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  height: 24,
+                }}
+              />
             ))}
             {candidate.skills.length > 4 && (
-              <span className="px-2 py-1 bg-white/10 rounded-full text-xs">
-                +{candidate.skills.length - 4}
-              </span>
+              <Chip
+                label={`+${candidate.skills.length - 4}`}
+                size="small"
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  height: 24,
+                }}
+              />
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* Card Body - Scrollable */}
-        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex-1 overflow-y-auto touch-scroll">
+        <CardContent sx={{ p: { xs: 2, sm: 3 }, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: { xs: 1.5, sm: 2 } }}>
           {/* Top Strengths */}
-          <div>
-            <h3 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                color: 'text.secondary',
+                mb: 1,
+              }}
+            >
               Key Strengths
-            </h3>
-            <ul className="space-y-1.5 sm:space-y-2">
+            </Typography>
+            <Box component="ul" sx={{ m: 0, pl: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
               {candidate.topStrengths.slice(0, 3).map((strength, i) => (
-                <li key={i} className="flex items-start gap-2 text-slate-700 dark:text-slate-200">
-                  <span className="text-success mt-0.5 flex-shrink-0">✓</span>
-                  <span className="text-xs sm:text-sm leading-snug">{strength}</span>
-                </li>
+                <Box component="li" key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                  <Typography component="span" color="success.main" sx={{ mt: 0.25, flexShrink: 0 }}>
+                    ✓
+                  </Typography>
+                  <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+                    {strength}
+                  </Typography>
+                </Box>
               ))}
-            </ul>
-          </div>
+            </Box>
+          </Box>
 
           {/* Standout Project */}
-          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 sm:p-4">
-            <h3 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 sm:mb-2 flex items-center gap-1">
-              <Sparkles className="w-4 h-4 text-warning" />
-              Standout
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 line-clamp-3">
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 1.5, sm: 2 },
+              backgroundColor: 'action.hover',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+              <AutoAwesome sx={{ fontSize: 16, color: 'warning.main' }} />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: 'text.secondary',
+                }}
+              >
+                Standout
+              </Typography>
+            </Box>
+            <Typography
+              variant="body2"
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
               {candidate.standoutProject}
-            </p>
-          </div>
+            </Typography>
+          </Paper>
 
           {/* AI Summary */}
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-3 sm:pt-4">
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 italic line-clamp-3">
+          <Box>
+            <Divider sx={{ mb: 2 }} />
+            <Typography
+              variant="body2"
+              sx={{
+                fontStyle: 'italic',
+                color: 'text.secondary',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
               "{candidate.aiSummary}"
-            </p>
-          </div>
-        </div>
+            </Typography>
+          </Box>
+        </CardContent>
 
         {/* Feedback Section - Visible only on top card */}
         {isTop && (
-          <div className="border-t border-slate-200 dark:border-slate-700 p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50">
-             <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-               Recruiter Notes
-             </div>
-             <input
-               type="text"
-               value={feedbackText}
-               onChange={(e) => setFeedbackText(e.target.value)}
-               placeholder="Add feedback (e.g. 'Love the startup exp', 'Needs React')..."
-               className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-400"
-               onKeyDown={(e) => e.stopPropagation()} // Prevent triggering global hotkeys
-               onClick={(e) => e.stopPropagation()}
-             />
-             <p className="text-[10px] text-slate-400 mt-1.5">
-               {feedbackText ? "Swipe right to LIKE this trait, left to DISLIKE it." : "Swipe normally to process without feedback."}
-             </p>
-          </div>
+          <Box
+            sx={{
+              borderTop: 1,
+              borderColor: 'divider',
+              p: { xs: 1.5, sm: 2 },
+              backgroundColor: 'action.hover',
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                color: 'text.secondary',
+                mb: 1,
+                display: 'block',
+              }}
+            >
+              Recruiter Notes
+            </Typography>
+            <TextField
+              fullWidth
+              size="small"
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder="Add feedback (e.g. 'Love the startup exp', 'Needs React')..."
+              onKeyDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.625rem' }}>
+              {feedbackText
+                ? "Swipe right to LIKE this trait, left to DISLIKE it."
+                : "Swipe normally to process without feedback."}
+            </Typography>
+          </Box>
         )}
 
         {/* Tap hint */}
-        <div className="px-4 sm:px-6 pb-3 sm:pb-4 text-center flex-shrink-0">
-          <span className="text-xs text-slate-400">Tap to view full resume</span>
-        </div>
-      </div>
+        <Box sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 1.5, sm: 2 }, textAlign: 'center', flexShrink: 0 }}>
+          <Typography variant="caption" color="text.secondary">
+            Tap to view full resume
+          </Typography>
+        </Box>
+      </Card>
     </motion.div>
   )
 }

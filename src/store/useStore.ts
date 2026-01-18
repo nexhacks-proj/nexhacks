@@ -9,6 +9,8 @@ interface AppState {
   currentJob: Job | null
   createJob: (job: Omit<Job, 'id' | 'createdAt'>) => Job
   setCurrentJob: (job: Job | null) => void
+  deleteJob: (jobId: string) => void
+  deleteAllJobs: () => void
 
   // Candidates
   candidates: Candidate[]
@@ -71,6 +73,34 @@ export const useStore = create<AppState>()(
         if (shouldRank) {
           get().rankPendingCandidatesForCurrentJob()
         }
+      },
+
+      deleteJob: (jobId) => {
+        const { currentJob, candidates } = get()
+        
+        // Remove job from jobs array
+        set((state) => ({
+          jobs: state.jobs.filter(j => j.id !== jobId),
+          // If deleting current job, set to null
+          currentJob: currentJob?.id === jobId ? null : currentJob,
+          // Also delete all candidates associated with this job
+          candidates: state.candidates.filter(c => c.jobId !== jobId),
+          // Clear swipe history for this job's candidates
+          swipeHistory: state.swipeHistory.filter(sh => {
+            const candidate = candidates.find(c => c.id === sh.candidateId)
+            return candidate?.jobId !== jobId
+          })
+        }))
+      },
+
+      deleteAllJobs: () => {
+        set({
+          jobs: [],
+          currentJob: null,
+          candidates: [],
+          swipeHistory: [],
+          rankedPendingIds: []
+        })
       },
 
       // Candidates

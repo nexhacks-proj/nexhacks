@@ -7,7 +7,7 @@ import { shouldUseMongoDB } from './storageConfig'
  * Save a candidate to MongoDB (only in production)
  */
 export async function saveCandidate(candidate: Candidate): Promise<void> {
-  if (!shouldUseMongoDB()) {
+  if (!shouldUseMongoDB() || !CandidateModel) {
     console.log('[candidateStore] Skipping MongoDB save (local dev mode - using localStorage)')
     return
   }
@@ -29,7 +29,7 @@ export async function saveCandidates(candidates: Candidate[]): Promise<void> {
     return
   }
   
-  if (!shouldUseMongoDB()) {
+  if (!shouldUseMongoDB() || !CandidateModel) {
     console.log(`[candidateStore] Skipping MongoDB save for ${candidates.length} candidate(s) (local dev mode - using localStorage)`)
     return
   }
