@@ -1,41 +1,47 @@
 import { Candidate } from '@/types'
+import connectDB from './db'
+import CandidateModel from '@/models/Candidate'
 
-// In-memory store for webhook-received candidates
-// NOTE: In production, replace with a proper database (PostgreSQL, MongoDB, etc.)
-const webhookCandidates: Map<string, Candidate[]> = new Map()
-
-export function addWebhookCandidate(jobId: string, candidate: Candidate): void {
-  const existing = webhookCandidates.get(jobId) || []
-  existing.push(candidate)
-  webhookCandidates.set(jobId, existing)
+export async function addWebhookCandidate(jobId: string, candidate: Candidate): Promise<void> {
+  await connectDB()
+  await CandidateModel.findOneAndUpdate(
+    { id: candidate.id },
+    candidate,
+    { upsert: true, new: true }
+  )
 }
 
-export function getWebhookCandidates(jobId: string): Candidate[] {
-  return webhookCandidates.get(jobId) || []
+export async function getWebhookCandidates(jobId: string): Promise<Candidate[]> {
+  await connectDB()
+  const docs = await CandidateModel.find({ jobId }).lean()
+  return docs.map(doc => ({
+    ...doc,
+    createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
+    swipedAt: doc.swipedAt ? new Date(doc.swipedAt) : undefined
+  })) as Candidate[]
 }
 
-export function getAllWebhookCandidates(): Candidate[] {
-  const all: Candidate[] = []
-  webhookCandidates.forEach(candidates => all.push(...candidates))
-  return all
+export async function getAllWebhookCandidates(): Promise<Candidate[]> {
+  await connectDB()
+  const docs = await CandidateModel.find({}).lean()
+  return docs.map(doc => ({
+    ...doc,
+    createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
+    swipedAt: doc.swipedAt ? new Date(doc.swipedAt) : undefined
+  })) as Candidate[]
 }
 
-export function clearWebhookCandidates(jobId?: string): void {
+export async function clearWebhookCandidates(jobId?: string): Promise<void> {
+  await connectDB()
   if (jobId) {
-    webhookCandidates.delete(jobId)
+    await CandidateModel.deleteMany({ jobId })
   } else {
-    webhookCandidates.clear()
+    await CandidateModel.deleteMany({})
   }
 }
 
-export function removeWebhookCandidate(candidateId: string): boolean {
-  let found = false
-  webhookCandidates.forEach((candidates) => {
-    const index = candidates.findIndex((c: Candidate) => c.id === candidateId)
-    if (index !== -1) {
-      candidates.splice(index, 1)
-      found = true
-    }
-  })
-  return found
+export async function removeWebhookCandidate(candidateId: string): Promise<boolean> {
+  await connectDB()
+  const result = await CandidateModel.deleteOne({ id: candidateId })
+  return result.deletedCount > 0
 }

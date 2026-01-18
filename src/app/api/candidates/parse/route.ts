@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseResumeWithAI } from '@/lib/gemini'
-import { Job } from '@/types'
+import { saveCandidate } from '@/lib/candidateStore'
+import { Job, Candidate } from '@/types'
 
 // This endpoint uses Gemini AI for resume parsing
 export async function POST(request: NextRequest) {
@@ -22,14 +23,26 @@ export async function POST(request: NextRequest) {
     // Use Gemini AI to parse the resume
     const parsed = await parseResumeWithAI(rawResume, job as Job)
 
+    // Generate candidate ID
+    const candidateId = `candidate-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    // Build full candidate object
+    const candidate: Candidate = {
+      id: candidateId,
+      jobId: job.id,
+      name,
+      email,
+      rawResume,
+      ...parsed,
+      status: 'pending' as const
+    }
+
+    // Save candidate to MongoDB
+    await saveCandidate(candidate)
+
     return NextResponse.json({
       success: true,
-      candidate: {
-        name,
-        email,
-        rawResume,
-        ...parsed
-      }
+      candidate
     })
   } catch (error) {
     console.error('Error parsing candidate:', error)

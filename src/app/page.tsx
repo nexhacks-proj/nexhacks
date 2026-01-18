@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import { Briefcase, Users, Zap, ArrowRight } from 'lucide-react'
@@ -75,8 +74,16 @@ export default function Home() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
           <button
-            onClick={() => router.push('/job/new')}
-            className="inline-flex items-center justify-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            onClick={(e) => {
+              e.preventDefault()
+              try {
+                router.push('/job/new')
+              } catch (error) {
+                console.error('Navigation error:', error)
+                window.location.href = '/job/new'
+              }
+            }}
+            className="inline-flex items-center justify-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-medium transition-colors cursor-pointer"
           >
             Create New Job
             <ArrowRight className="w-4 h-4" />

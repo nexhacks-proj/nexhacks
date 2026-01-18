@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store candidate server-side for UI access
-    addWebhookCandidate(job.id, candidate)
+    await addWebhookCandidate(job.id, candidate)
 
     return NextResponse.json({
       success: true,

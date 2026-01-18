@@ -1,3 +1,4 @@
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { Candidate, Job } from '@/types'
 
 // Cerebras API - ultra-fast inference
@@ -59,57 +60,107 @@ interface ResumeParseResult {
   topStrengths: string[]
   standoutProject: string
   aiSummary: string
+  aiBucket: AIBucket
 }
 
 export async function parseResumeWithAI(
   rawResume: string,
-  job: Job
+  job: Job,
+  feedback?: { likes: string[]; dislikes: string[] }
 ): Promise<ResumeParseResult> {
-  const prompt = `You are an expert technical recruiter at a fast-growing startup. Analyze this resume for a ${job.title} position requiring ${job.techStack.join(', ')}.
+  let prompt = `You are an expert technical recruiter analyzing resumes for a startup hiring manager. Your goal is to not just parse the resume, but to also categorize the candidate's fit for a specific role.
 
+JOB REQUIREMENTS:
+- Role: ${job.title}
+- Tech Stack: ${job.techStack.join(', ')}
+- Experience Level: ${job.experienceLevel === 'none' ? 'Entry Level (0 years)' : job.experienceLevel === '1-3' ? 'Mid Level (1-3 years)' : 'Senior (3+ years)'}
+- Startup Experience Preferred: ${job.startupExperiencePreferred ? 'Yes' : 'No'}
+`
+
+  if (feedback && (feedback.likes.length > 0 || feedback.dislikes.length > 0)) {
+    prompt += `
+RECRUITER FEEDBACK:
+The hiring manager has provided the following specific feedback. Use this to heavily influence the 'aiBucket' and 'aiSummary':
+${feedback.likes.length > 0 ? `- LIKES (Boost these candidates): ${feedback.likes.join(', ')}` : ''}
+${feedback.dislikes.length > 0 ? `- DISLIKES (Penalty these candidates): ${feedback.dislikes.join(', ')}` : ''}
+`
+  }
+
+  prompt += `
 RESUME:
 ${rawResume}
 
-Provide a DETAILED analysis. Return ONLY valid JSON (no markdown):
-{
-  "skills": ["list", "all", "relevant", "technical", "skills"],
-  "yearsOfExperience": <total years of professional tech experience>,
-  "projects": [{"name": "Project Name", "description": "Detailed description of what it does and its impact", "technologies": ["specific", "tech", "used"]}],
-  "education": [{"institution": "Full Name", "degree": "Degree Type", "field": "Field", "year": 2020}],
-  "workHistory": [{"company": "Name", "role": "Title", "duration": "Year-Year", "highlights": ["Specific achievement", "Another accomplishment"], "isStartup": false}],
-  "topStrengths": ["Specific strength for THIS role with evidence", "Another specific strength", "Third strength relevant to ${job.techStack[0]}"],
-  "standoutProject": "Their most impressive accomplishment with specifics about scale and impact. 2-3 sentences.",
-  "aiSummary": "Start with verdict (Strong Yes/Lean Yes/Maybe/Lean No/Strong No). Then 3-4 sentences explaining why, mentioning both strengths and any red flags."
-}`
 
-  const text = await callCerebras(prompt)
-  const jsonText = extractJSON(text)
-  return JSON.parse(jsonText) as ResumeParseResult
+IMPORTANT INSTRUCTIONS:
+1.  **Bucketing:** Based on the ENTIRE resume and how it matches the job requirements ${feedback ? 'AND recruiter feedback' : ''}, assign the candidate to one of these 5 buckets:
+    - 'top': Exceptional candidate, a near-perfect match. Checks all the boxes and more. (90th percentile)
+    - 'strong': Very good candidate, meets most key requirements. (75th percentile)
+    - 'average': Decent candidate, meets some requirements but has gaps. (50th percentile)
+    - 'weak': Poor fit, missing most key requirements. (25th percentile)
+    - 'poor': Completely unqualified. (10th percentile)
+    ${feedback ? 'NOTE: If a candidate matches a "DISLIKE", they should likely be in "weak" or "poor". If they match "LIKES", boost them up.' : ''}
+2.  **JSON ONLY:** Return ONLY the JSON object, no markdown, no explanations, no text before or after the JSON.`
+
+
+  try {
+    const text = await callCerebras(prompt)
+
+
+    // Extract JSON from response (handle markdown code blocks if present)
+    let jsonText = text.trim()
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '')
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/```\n?/g, '')
+    }
+
+    const parsed = JSON.parse(jsonText) as ResumeParseResult
+    return parsed
+  } catch (error) {
+    console.error('Error parsing resume with Gemini:', error)
+    // Preserve the original error message if it's already an Error
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to parse resume with AI')
+  }
 }
 
-// Parse multiple resumes in a single API call - Cerebras is fast enough for this
+// Parse multiple resumes in a single API call to avoid rate limiting
 export async function parseMultipleResumesWithAI(
   resumes: Array<{ id: string; name: string; email: string; rawResume: string }>,
-  job: Job
+  job: Job,
+  feedback?: { likes: string[]; dislikes: string[] }
 ): Promise<Array<ResumeParseResult & { id: string }>> {
   const resumesText = resumes.map((r, idx) =>
     `=== RESUME ${idx + 1} (ID: ${r.id}) ===\n${r.rawResume}\n=== END RESUME ${idx + 1} ===`
   ).join('\n\n')
 
-  const prompt = `You are an expert technical recruiter at a fast-growing startup. Analyze ALL ${resumes.length} resumes below for a ${job.title} position.
+  let prompt = `You are an expert technical recruiter analyzing MULTIPLE resumes for a startup hiring manager. Your goal is to not just parse the resumes, but to also categorize each candidate's fit for a specific role.
 
 JOB REQUIREMENTS:
 - Role: ${job.title}
-- Required Tech Stack: ${job.techStack.join(', ')}
-- Experience Level: ${job.experienceLevel === 'none' ? 'Entry Level (0 years OK)' : job.experienceLevel === '1-3' ? 'Mid Level (1-3 years required)' : 'Senior (3+ years required)'}
-- Startup Experience: ${job.startupExperiencePreferred ? 'Strongly preferred - we value scrappy builders' : 'Not required'}
+- Tech Stack: ${job.techStack.join(', ')}
+- Experience Level: ${job.experienceLevel === 'none' ? 'Entry Level (0 years)' : job.experienceLevel === '1-3' ? 'Mid Level (1-3 years)' : 'Senior (3+ years)'}
+- Startup Experience Preferred: ${job.startupExperiencePreferred ? 'Yes' : 'No'}
+`
 
+  if (feedback && (feedback.likes.length > 0 || feedback.dislikes.length > 0)) {
+    prompt += `
+RECRUITER FEEDBACK:
+The hiring manager has provided the following specific feedback. Use this to heavily influence the 'aiBucket' and 'aiSummary':
+${feedback.likes.length > 0 ? `- LIKES (Boost these candidates): ${feedback.likes.join(', ')}` : ''}
+${feedback.dislikes.length > 0 ? `- DISLIKES (Penalty these candidates): ${feedback.dislikes.join(', ')}` : ''}
+`
+  }
+
+  prompt += `
 RESUMES TO ANALYZE:
 ${resumesText}
 
-TASK: Provide a DETAILED analysis for each candidate. Be thorough and specific.
+TASK: Parse ALL ${resumes.length} resumes above and provide a structured analysis for EACH candidate. Return ONLY a valid JSON array with one object per resume, in the SAME ORDER as provided above.
 
-Return a JSON array with ${resumes.length} objects. Each object must have:
+Each object in the array must have this exact structure:
 {
   "id": "<exact ID from the resume header, e.g. mock-1>",
   "skills": ["list", "all", "relevant", "technical", "skills", "mentioned"],
@@ -143,11 +194,21 @@ Return a JSON array with ${resumes.length} objects. Each object must have:
     "Specific strength #2 with concrete evidence from their background",
     "Specific strength #3 relevant to ${job.techStack.slice(0, 2).join(' and ')}"
   ],
-  "standoutProject": "Their single most impressive accomplishment. Be specific about scale, impact, and why it matters. 2-3 sentences.",
-  "aiSummary": "Detailed 3-4 sentence hiring recommendation. Start with your verdict (Strong Yes / Lean Yes / Maybe / Lean No / Strong No). Explain the key reasons for your assessment. Mention specific strengths AND any red flags or gaps. Be candid and direct."
+  "standoutProject": "The single most impressive thing this candidate has done (1-2 sentences). Focus on impact and scale.",
+  "aiSummary": "2-3 sentence hiring manager summary. Is this a good fit? What are the trade-offs? Be honest and direct. ${feedback ? 'Mention how they match the specific likes/dislikes feedback.' : ''}",
+  "aiBucket": "<'top' | 'strong' | 'average' | 'weak' | 'poor'>"
 }
 
-IMPORTANT GUIDELINES:
+IMPORTANT INSTRUCTIONS:
+1.  **Bucketing:** For EACH candidate, based on their ENTIRE resume and how it matches the job requirements ${feedback ? 'AND recruiter feedback' : ''}, assign them to one of these 5 buckets:
+    - 'top': Exceptional candidate, a near-perfect match. Checks all the boxes and more. (90th percentile)
+    - 'strong': Very good candidate, meets most key requirements. (75th percentile)
+    - 'average': Decent candidate, meets some requirements but has gaps. (50th percentile)
+    - 'weak': Poor fit, missing most key requirements. (25th percentile)
+    - 'poor': Completely unqualified. (10th percentile)
+    ${feedback ? 'NOTE: If a candidate matches a "DISLIKE", they should likely be in "weak" or "poor". If they match "LIKES", boost them up.' : ''}
+2.  **JSON ARRAY ONLY:** Return a JSON ARRAY with exactly ${resumes.length} objects. Each object MUST include the "id" field matching the resume ID.
+3.  NO extra text: Return ONLY the JSON array, no markdown, no explanations, nothing else.
 - topStrengths must be SPECIFIC to this candidate and role, not generic
 - aiSummary must start with a clear verdict and be detailed (3-4 sentences)
 - standoutProject should highlight their BEST work with specifics
@@ -157,57 +218,27 @@ IMPORTANT GUIDELINES:
 
 Return ONLY the JSON array. No markdown code blocks.`
 
-  const text = await callCerebras(prompt)
-  const jsonText = extractJSON(text)
-  return JSON.parse(jsonText) as Array<ResumeParseResult & { id: string }>
-}
+  try {
+    const text = await callCerebras(prompt)
+    console.log("Cerebras (OSS120B) Raw Response:", text) // DEBUG
 
-// Robust JSON extraction from LLM output
-function extractJSON(text: string): string {
-  let cleaned = text.trim()
-
-  // Remove markdown code blocks
-  cleaned = cleaned.replace(/```json\s*/gi, '').replace(/```\s*/g, '')
-
-  // Find the JSON array or object
-  const arrayStart = cleaned.indexOf('[')
-  const objectStart = cleaned.indexOf('{')
-
-  let start = -1
-  let isArray = false
-
-  if (arrayStart !== -1 && (objectStart === -1 || arrayStart < objectStart)) {
-    start = arrayStart
-    isArray = true
-  } else if (objectStart !== -1) {
-    start = objectStart
-    isArray = false
-  }
-
-  if (start === -1) {
-    throw new Error('No JSON found in response')
-  }
-
-  // Find matching end bracket
-  const openBracket = isArray ? '[' : '{'
-  const closeBracket = isArray ? ']' : '}'
-  let depth = 0
-  let end = -1
-
-  for (let i = start; i < cleaned.length; i++) {
-    if (cleaned[i] === openBracket) depth++
-    if (cleaned[i] === closeBracket) depth--
-    if (depth === 0) {
-      end = i + 1
-      break
+    // Extract JSON from response (handle markdown code blocks if present)
+    let jsonText = text.trim()
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '')
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/```\n?/g, '')
     }
-  }
 
-  if (end === -1) {
-    throw new Error('Malformed JSON - no closing bracket found')
+    const parsed = JSON.parse(jsonText) as Array<ResumeParseResult & { id: string }>
+    return parsed
+  } catch (error) {
+    console.error('Error batch parsing resumes with Cerebras:', error)
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to batch parse resumes with AI')
   }
-
-  return cleaned.slice(start, end)
 }
 
 export async function batchParseResumes(
@@ -218,12 +249,11 @@ export async function batchParseResumes(
   // Process in batches of 10 for Cerebras (fast enough)
   const BATCH_SIZE = 10
   const results: Array<Omit<Candidate, 'jobId'>> = []
-
-  for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
     const batch = candidates.slice(i, i + BATCH_SIZE)
 
     try {
-      const parsedBatch = await parseMultipleResumesWithAI(batch, job)
+      const parsedBatch = await parseMultipleResumesWithAI(batch, job, job.feedback)
 
       for (const candidate of batch) {
         const parsed = parsedBatch.find(p => p.id === candidate.id)
@@ -252,33 +282,35 @@ export async function batchParseResumes(
             standoutProject: 'Resume parsing failed',
             aiSummary: 'AI parsing failed for this candidate.',
             status: 'pending'
-          })
-        }
-      }
-    } catch (error) {
-      console.error(`Failed to parse batch starting at ${i}:`, error)
-      for (const candidate of batch) {
-        results.push({
-          id: candidate.id,
-          name: candidate.name,
-          email: candidate.email,
-          rawResume: candidate.rawResume,
-          skills: [],
-          yearsOfExperience: 0,
-          projects: [],
-          education: [],
-          workHistory: [],
-          topStrengths: ['Unable to parse resume'],
-          standoutProject: 'Resume parsing failed',
-          aiSummary: 'AI parsing failed for this candidate.',
+              })
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to parse batch ${i}:`, error)
+          // Add fallback entries for entire failed batch
+          for (const candidate of batch) {
+            results.push({
+              id: candidate.id,
+              name: candidate.name,
+              email: candidate.email,
+              rawResume: candidate.rawResume,
+              skills: [],
+              yearsOfExperience: 0,
+              projects: [],
+              education: [],
+              workHistory: [],
+              topStrengths: ['Unable to parse resume'],
+              standoutProject: 'Resume parsing failed',
+              aiSummary: 'AI parsing failed for this candidate. Please review manually.',
+              aiBucket: 'average', // Default bucket
           status: 'pending'
         })
       }
     }
 
-    // Update progress after each batch
-    onProgress?.(results.length, candidates.length)
+    onProgress?.(Math.min(i + BATCH_SIZE, candidates.length), candidates.length)
   }
 
   return results
 }
+
