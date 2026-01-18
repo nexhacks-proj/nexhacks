@@ -13,7 +13,7 @@ export async function saveCandidate(candidate: Candidate): Promise<void> {
   }
   
   await connectDB()
-  await CandidateModel.findOneAndUpdate(
+  await model.findOneAndUpdate(
     { id: candidate.id },
     candidate,
     { upsert: true, new: true }
@@ -47,7 +47,7 @@ export async function saveCandidates(candidates: Candidate[]): Promise<void> {
       }
     }))
     
-    const result = await CandidateModel.bulkWrite(operations)
+    const result = await model.bulkWrite(operations)
     console.log(`[candidateStore] ✅ Saved ${result.upsertedCount + result.modifiedCount} candidate(s) (${result.upsertedCount} new, ${result.modifiedCount} updated)`)
   } catch (error) {
     console.error('[candidateStore] ❌ Error saving candidates:', error)
@@ -59,8 +59,13 @@ export async function saveCandidates(candidates: Candidate[]): Promise<void> {
  * Get candidates by job ID from database
  */
 export async function getCandidatesByJobId(jobId: string): Promise<Candidate[]> {
+  const model = await getCandidateModel()
+  if (!MONGODB_ENABLED || !model) {
+    return []
+  }
+  
   await connectDB()
-  const docs = await CandidateModel.find({ jobId }).lean()
+  const docs = await model.find({ jobId }).lean()
   return docs.map(doc => ({
     ...doc,
     createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
@@ -72,8 +77,13 @@ export async function getCandidatesByJobId(jobId: string): Promise<Candidate[]> 
  * Get all candidates from database
  */
 export async function getAllCandidates(): Promise<Candidate[]> {
+  const model = await getCandidateModel()
+  if (!MONGODB_ENABLED || !model) {
+    return []
+  }
+  
   await connectDB()
-  const docs = await CandidateModel.find({}).lean()
+  const docs = await model.find({}).lean()
   return docs.map(doc => ({
     ...doc,
     createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),

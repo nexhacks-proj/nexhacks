@@ -1,11 +1,19 @@
-import mongoose from 'mongoose'
+// Optional MongoDB connection - gracefully handles if mongoose is not installed
+let mongoose: any = null
+try {
+  mongoose = require('mongoose')
+} catch (error) {
+  console.warn('[db.ts] Mongoose not installed. MongoDB features will be disabled.')
+}
+
+const MONGODB_ENABLED = !!mongoose
 
 // Default connection string - can be overridden with MONGODB_URI env variable
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://elgooseman321_db_user:VkOrkGwTYnu64tuz@maincluster.ndr3cps.mongodb.net/swipehire?retryWrites=true&w=majority&appName=MainCluster'
 
 interface MongooseCache {
-  conn: typeof mongoose | null
-  promise: Promise<typeof mongoose> | null
+  conn: any | null
+  promise: Promise<any> | null
 }
 
 // Use global cache to prevent multiple connections in Next.js dev mode
@@ -20,7 +28,11 @@ if (!global.mongoose) {
   global.mongoose = cached
 }
 
-async function connectDB(): Promise<typeof mongoose> {
+async function connectDB(): Promise<any> {
+  if (!MONGODB_ENABLED) {
+    throw new Error('MongoDB is not enabled. Please install mongoose: npm install mongoose')
+  }
+
   if (cached.conn) {
     return cached.conn
   }
@@ -38,10 +50,10 @@ async function connectDB(): Promise<typeof mongoose> {
       directConnection: false,
     }
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose: any) => {
       console.log(`✅ MongoDB connected to: ${mongoose.connection.db?.databaseName || 'swipehire'}`)
       return mongoose
-    }).catch((err) => {
+    }).catch((err: any) => {
       console.error('❌ MongoDB connection failed:', err)
       throw err
     })
@@ -58,3 +70,4 @@ async function connectDB(): Promise<typeof mongoose> {
 }
 
 export default connectDB
+export { MONGODB_ENABLED }
