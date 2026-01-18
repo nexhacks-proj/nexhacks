@@ -19,10 +19,11 @@ export interface JobDocument extends Job, Document {}
 let JobModel: any = null
 
 if (mongoose && Schema) {
-  const JobSchema = new Schema<JobDocument>(
+  const JobSchema = new Schema(
     {
       id: { type: String, required: true, unique: true },
       title: { type: String, required: true },
+      description: { type: String },
       techStack: [{ type: String }],
       experienceLevel: {
         type: String,
@@ -40,7 +41,7 @@ if (mongoose && Schema) {
   )
 
   // Prevent model re-compilation in Next.js dev mode
-  JobModel = mongoose.models?.Job || mongoose.model<JobDocument>('Job', JobSchema)
+  JobModel = mongoose.models?.Job || mongoose.model('Job', JobSchema)
 }
 
 export default JobModel

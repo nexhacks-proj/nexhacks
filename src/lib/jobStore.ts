@@ -15,7 +15,7 @@ export async function saveJob(job: Job): Promise<void> {
   try {
     await connectDB()
     console.log(`[jobStore] Saving job "${job.title}" (${job.id}) to MongoDB...`)
-    const result = await model.findOneAndUpdate(
+    const result = await JobModel.findOneAndUpdate(
       { id: job.id },
       { $set: job },
       { upsert: true, new: true }
@@ -31,13 +31,12 @@ export async function saveJob(job: Job): Promise<void> {
  * Get job by ID from database
  */
 export async function getJobById(jobId: string): Promise<Job | null> {
-  const model = await getJobModel()
-  if (!MONGODB_ENABLED || !model) {
+  if (!shouldUseMongoDB()) {
     return null
   }
   
   await connectDB()
-  const doc = await model.findOne({ id: jobId }).lean()
+  const doc = await JobModel.findOne({ id: jobId }).lean()
   if (!doc) return null
   
   return {
@@ -50,13 +49,12 @@ export async function getJobById(jobId: string): Promise<Job | null> {
  * Get all jobs from database
  */
 export async function getAllJobs(): Promise<Job[]> {
-  const model = await getJobModel()
-  if (!MONGODB_ENABLED || !model) {
+  if (!shouldUseMongoDB()) {
     return []
   }
   
   await connectDB()
-  const docs = await model.find({}).lean()
+  const docs = await JobModel.find({}).lean()
   return docs.map(doc => ({
     ...doc,
     createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date()

@@ -1,6 +1,7 @@
 export interface Job {
   id: string
   title: string
+  description?: string
   techStack: string[]
   experienceLevel: 'none' | '1-3' | '3+'
   visaSponsorship: boolean

@@ -1,15 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import { ArrowLeft, Plus, X, Briefcase } from 'lucide-react'
 import { ExperienceLevel, Job } from '@/types'
 
-const COMMON_TECH_TAGS = [
-  'React', 'TypeScript', 'Node.js', 'Python', 'Go', 'Java',
-  'PostgreSQL', 'MongoDB', 'AWS', 'Docker', 'Kubernetes',
-  'Next.js', 'Vue', 'Angular', 'Ruby', 'Rust', 'GraphQL'
+const SKILL_PATTERNS: { tag: string, patterns: RegExp[] }[] = [
+  { tag: 'React', patterns: [/\breact\.?js\b/i, /\breact\b/i] },
+  { tag: 'TypeScript', patterns: [/\bts\b/i, /\btypescript\b/i] },
+  { tag: 'JavaScript', patterns: [/\bjs\b/i, /\bjavascript\b/i] },
+  { tag: 'Node.js', patterns: [/\bnode\.?js\b/i, /\bnode\b/i] },
+  { tag: 'Python', patterns: [/\bpy\b/i, /\bpython\b/i] },
+  { tag: 'Go', patterns: [/\bgolang\b/i, /\bgo\b/i] }, // 'go' is common word, stricter boundary usually needed but \bgo\b is okay
+  { tag: 'Java', patterns: [/\bjava\b/i] },
+  { tag: 'PostgreSQL', patterns: [/\bpostgres\b/i, /\bpostgresql\b/i] },
+  { tag: 'MongoDB', patterns: [/\bmongo\b/i, /\bmongodb\b/i] },
+  { tag: 'AWS', patterns: [/\baws\b/i, /\bamazon web services\b/i] },
+  { tag: 'Docker', patterns: [/\bdocker\b/i] },
+  { tag: 'Kubernetes', patterns: [/\bk8s\b/i, /\bkubernetes\b/i] },
+  { tag: 'Next.js', patterns: [/\bnext\.?js\b/i, /\bnextjs\b/i] },
+  { tag: 'Vue', patterns: [/\bvue\.?js\b/i, /\bvue\b/i] },
+  { tag: 'Angular', patterns: [/\bangular\b/i] },
+  { tag: 'Ruby', patterns: [/\bruby\b/i] },
+  { tag: 'Rust', patterns: [/\brust\b/i] },
+  { tag: 'GraphQL', patterns: [/\bgraphql\b/i, /\bgql\b/i] }
 ]
 
 export default function NewJobPage() {
@@ -17,12 +32,16 @@ export default function NewJobPage() {
   const { createJob } = useStore()
 
   const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [techStack, setTechStack] = useState<string[]>([])
   const [customTag, setCustomTag] = useState('')
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>('1-3')
   const [visaSponsorship, setVisaSponsorship] = useState(false)
   const [startupExperience, setStartupExperience] = useState(false)
   const [portfolioRequired, setPortfolioRequired] = useState(false)
+
+  // Track which skills were auto-added by the system so we can remove them if the user deletes the text
+  const lastDetectedSkills = useRef<Set<string>>(new Set())
 
   const handleAddTag = (tag: string) => {
     if (tag && !techStack.includes(tag)) {
@@ -33,6 +52,42 @@ export default function NewJobPage() {
 
   const handleRemoveTag = (tag: string) => {
     setTechStack(techStack.filter(t => t !== tag))
+  }
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newDescription = e.target.value
+    setDescription(newDescription)
+
+    // 1. Detect current skills in text
+    const currentDetected = new Set<string>()
+    SKILL_PATTERNS.forEach(({ tag, patterns }) => {
+      if (patterns.some(p => p.test(newDescription))) {
+        currentDetected.add(tag)
+      }
+    })
+
+    // 2. Identify what was added and what was removed relative to LAST detection
+    const currentArray = Array.from(currentDetected)
+    const lastArray = Array.from(lastDetectedSkills.current)
+    
+    const newlyDetected = currentArray.filter(tag => !lastDetectedSkills.current.has(tag))
+    const noLongerDetected = lastArray.filter(tag => !currentDetected.has(tag))
+
+    // 3. Update techStack state
+    setTechStack(prevStack => {
+      const newStack = new Set(prevStack)
+      
+      // Add new
+      newlyDetected.forEach(tag => newStack.add(tag))
+      
+      // Remove old (ONLY if it's currently in the stack - protects against user manually removing it already)
+      noLongerDetected.forEach(tag => newStack.delete(tag))
+      
+      return Array.from(newStack)
+    })
+
+    // 4. Update ref for next time
+    lastDetectedSkills.current = currentDetected
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,6 +101,7 @@ export default function NewJobPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
+          description: description.trim(),
           techStack,
           experienceLevel,
           visaSponsorship,
@@ -81,6 +137,7 @@ export default function NewJobPage() {
       // Fallback: still create locally if API fails
       const job = createJob({
         title: title.trim(),
+        description: description.trim(),
         techStack,
         experienceLevel,
         visaSponsorship,
@@ -128,6 +185,22 @@ export default function NewJobPage() {
             </div>
           </div>
 
+          {/* Job Description */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Job Description
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              We'll automatically detect tech stack skills as you type.
+            </p>
+            <textarea
+              value={description}
+              onChange={handleDescriptionChange}
+              placeholder="e.g. We are looking for a Senior React developer with Node.js experience..."
+              className="w-full h-32 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow resize-y"
+            />
+          </div>
+
           {/* Tech Stack */}
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
@@ -155,18 +228,22 @@ export default function NewJobPage() {
               </div>
             )}
 
-            {/* Common Tags */}
+            {/* Common Tags - using helper to get list of tags from patterns */ }
             <div className="flex flex-wrap gap-2 mb-4">
-              {COMMON_TECH_TAGS.filter(tag => !techStack.includes(tag)).map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => handleAddTag(tag)}
-                  className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                >
-                  {tag}
-                </button>
-              ))}
+              {(() => {
+                 // Get unique tags from patterns
+                 const uniqueTags = Array.from(new Set(SKILL_PATTERNS.map(p => p.tag)))
+                 return uniqueTags.filter(tag => !techStack.includes(tag)).map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleAddTag(tag)}
+                    className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    {tag}
+                  </button>
+                ))
+              })()}
             </div>
 
             {/* Custom Tag Input */}
