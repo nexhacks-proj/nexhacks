@@ -387,7 +387,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
               variant="contained"
               color="secondary"
               startIcon={isLoadingMock ? <CircularProgress size={16} color="inherit" /> : <AutoAwesome />}
-              onClick={loadMockCandidates}
+              onClick={() => loadMockCandidates(false)}
               disabled={isProcessing || isLoadingMock}
             >
               {isLoadingMock ? 'Processing...' : 'Load Mock Candidates'}
