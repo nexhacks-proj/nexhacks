@@ -161,42 +161,44 @@ export default function CandidateCard({
           </Paper>
         </motion.div>
 
-        {/* Card Header */}
+        {/* Card Header - Compressed */}
         <Box
           sx={{
             background: 'linear-gradient(135deg, #1976d2, #1565c0)',
-            p: { xs: 2, sm: 3 },
+            p: { xs: 1.5, sm: 2 },
             color: 'white',
             flexShrink: 0,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
               <Avatar
                 sx={{
-                  width: { xs: 48, sm: 56 },
-                  height: { xs: 48, sm: 56 },
+                  width: { xs: 40, sm: 44 },
+                  height: { xs: 40, sm: 44 },
                   backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 }}
               >
-                <Person sx={{ fontSize: { xs: 24, sm: 28 } }} />
+                <Person sx={{ fontSize: { xs: 20, sm: 22 } }} />
               </Avatar>
               <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Typography
                   variant="h6"
                   sx={{
                     fontWeight: 600,
+                    fontSize: { xs: '1rem', sm: '1.125rem' },
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    lineHeight: 1.2,
                   }}
                 >
                   {candidate.name}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                  <Work sx={{ fontSize: 16 }} />
-                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                    {candidate.yearsOfExperience} years exp.
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+                  <Work sx={{ fontSize: 14 }} />
+                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.75rem' }}>
+                    {candidate.yearsOfExperience} years
                   </Typography>
                 </Box>
               </Box>
@@ -209,6 +211,7 @@ export default function CandidateCard({
                 e.stopPropagation()
                 onStar()
               }}
+              size="small"
               sx={{
                 color: 'white',
                 '&:hover': {
@@ -216,13 +219,13 @@ export default function CandidateCard({
                 },
               }}
             >
-              <Star />
+              <Star fontSize="small" />
             </IconButton>
           </Box>
 
-          {/* Skills Tags */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-            {candidate.skills.slice(0, 4).map((skill) => (
+          {/* Skills Tags - Compact */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {candidate.skills.slice(0, 5).map((skill) => (
               <Chip
                 key={skill}
                 label={skill}
@@ -230,20 +233,26 @@ export default function CandidateCard({
                 sx={{
                   backgroundColor: 'rgba(255, 255, 255, 0.2)',
                   color: 'white',
-                  fontSize: '0.75rem',
-                  height: 24,
+                  fontSize: '0.7rem',
+                  height: 20,
+                  '& .MuiChip-label': {
+                    px: 1,
+                  },
                 }}
               />
             ))}
-            {candidate.skills.length > 4 && (
+            {candidate.skills.length > 5 && (
               <Chip
-                label={`+${candidate.skills.length - 4}`}
+                label={`+${candidate.skills.length - 5}`}
                 size="small"
                 sx={{
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
                   color: 'white',
-                  fontSize: '0.75rem',
-                  height: 24,
+                  fontSize: '0.7rem',
+                  height: 20,
+                  '& .MuiChip-label': {
+                    px: 1,
+                  },
                 }}
               />
             )}
@@ -251,7 +260,7 @@ export default function CandidateCard({
         </Box>
 
         {/* Card Body - Scrollable */}
-        <CardContent sx={{ p: { xs: 2, sm: 3 }, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: { xs: 1.5, sm: 2 } }}>
+        <CardContent sx={{ p: { xs: 1.5, sm: 2 }, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: { xs: 1.25, sm: 1.5 } }}>
           {/* Top Strengths */}
           <Box>
             <Typography
@@ -261,18 +270,19 @@ export default function CandidateCard({
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
                 color: 'text.secondary',
-                mb: 1,
+                mb: 0.75,
+                fontSize: '0.7rem',
               }}
             >
               Key Strengths
             </Typography>
-            <Box component="ul" sx={{ m: 0, pl: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Box component="ul" sx={{ m: 0, pl: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               {candidate.topStrengths.slice(0, 3).map((strength, i) => (
-                <Box component="li" key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                  <Typography component="span" color="success.main" sx={{ mt: 0.25, flexShrink: 0 }}>
+                <Box component="li" key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75 }}>
+                  <Typography component="span" color="success.main" sx={{ mt: 0.2, flexShrink: 0, fontSize: '0.875rem' }}>
                     ✓
                   </Typography>
-                  <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+                  <Typography variant="body2" sx={{ lineHeight: 1.4, fontSize: '0.875rem' }}>
                     {strength}
                   </Typography>
                 </Box>
@@ -284,12 +294,13 @@ export default function CandidateCard({
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 1.5, sm: 2 },
+              p: { xs: 1.25, sm: 1.5 },
               backgroundColor: 'action.hover',
+              borderRadius: 2,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-              <AutoAwesome sx={{ fontSize: 16, color: 'warning.main' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+              <AutoAwesome sx={{ fontSize: 14, color: 'warning.main' }} />
               <Typography
                 variant="caption"
                 sx={{
@@ -297,19 +308,22 @@ export default function CandidateCard({
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                   color: 'text.secondary',
+                  fontSize: '0.7rem',
                 }}
               >
-                Standout
+                Standout Project
               </Typography>
             </Box>
             <Typography
               variant="body2"
               sx={{
+                fontSize: '0.875rem',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 display: '-webkit-box',
-                WebkitLineClamp: 3,
+                WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
+                lineHeight: 1.4,
               }}
             >
               {candidate.standoutProject}
@@ -318,17 +332,19 @@ export default function CandidateCard({
 
           {/* AI Summary */}
           <Box>
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 1.5 }} />
             <Typography
               variant="body2"
               sx={{
+                fontSize: '0.875rem',
                 fontStyle: 'italic',
                 color: 'text.secondary',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 display: '-webkit-box',
-                WebkitLineClamp: 3,
+                WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
+                lineHeight: 1.4,
               }}
             >
               "{candidate.aiSummary}"
@@ -336,49 +352,54 @@ export default function CandidateCard({
           </Box>
         </CardContent>
 
-        {/* Feedback Section - Visible only on top card */}
-        {isTop && (
-          <Box
-            sx={{
-              borderTop: 1,
-              borderColor: 'divider',
-              p: { xs: 1.5, sm: 2 },
-              backgroundColor: 'action.hover',
+        {/* Bottom Section - Integrated Notes & Tap Hint */}
+        <Box
+          sx={{
+            borderTop: 1,
+            borderColor: 'divider',
+            p: { xs: 1.25, sm: 1.5 },
+            backgroundColor: 'background.paper',
+            flexShrink: 0,
+          }}
+        >
+          {/* Recruiter Notes - Compact, only on top card */}
+          {isTop && (
+            <Box sx={{ mb: 1 }}>
+              <TextField
+                fullWidth
+                size="small"
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Add notes (e.g. 'Great startup exp', 'Needs React')..."
+                onKeyDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    fontSize: '0.8125rem',
+                    '& input': {
+                      py: 0.75,
+                    },
+                  },
+                }}
+              />
+              {feedbackText && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.65rem' }}>
+                  Swipe right to LIKE, left to DISLIKE this trait
+                </Typography>
+              )}
+            </Box>
+          )}
+          
+          {/* Tap hint */}
+          <Typography 
+            variant="caption" 
+            color="text.secondary" 
+            sx={{ 
+              display: 'block',
+              textAlign: 'center',
+              fontSize: '0.75rem',
             }}
           >
-            <Typography
-              variant="caption"
-              sx={{
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'text.secondary',
-                mb: 1,
-                display: 'block',
-              }}
-            >
-              Recruiter Notes
-            </Typography>
-            <TextField
-              fullWidth
-              size="small"
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
-              placeholder="Add feedback (e.g. 'Love the startup exp', 'Needs React')..."
-              onKeyDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.625rem' }}>
-              {feedbackText
-                ? "Swipe right to LIKE this trait, left to DISLIKE it."
-                : "Swipe normally to process without feedback."}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Tap hint */}
-        <Box sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 1.5, sm: 2 }, textAlign: 'center', flexShrink: 0 }}>
-          <Typography variant="caption" color="text.secondary">
             Tap to view full resume
           </Typography>
         </Box>
