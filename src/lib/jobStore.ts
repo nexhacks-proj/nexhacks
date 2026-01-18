@@ -1,5 +1,5 @@
 import { Job } from '@/types'
-import connectDB from './db'
+import connectDB, { MONGODB_ENABLED } from './db'
 import JobModel from '@/models/Job'
 import { shouldUseMongoDB } from './storageConfig'
 
@@ -15,7 +15,7 @@ export async function saveJob(job: Job): Promise<void> {
   try {
     await connectDB()
     console.log(`[jobStore] Saving job "${job.title}" (${job.id}) to MongoDB...`)
-    const result = await model.findOneAndUpdate(
+    const result = await JobModel.findOneAndUpdate(
       { id: job.id },
       { $set: job },
       { upsert: true, new: true }
@@ -31,13 +31,12 @@ export async function saveJob(job: Job): Promise<void> {
  * Get job by ID from database
  */
 export async function getJobById(jobId: string): Promise<Job | null> {
-  const model = await getJobModel()
-  if (!MONGODB_ENABLED || !model) {
+  if (!MONGODB_ENABLED || !JobModel) {
     return null
   }
   
   await connectDB()
-  const doc = await model.findOne({ id: jobId }).lean()
+  const doc = await JobModel.findOne({ id: jobId }).lean()
   if (!doc) return null
   
   return {
@@ -50,14 +49,13 @@ export async function getJobById(jobId: string): Promise<Job | null> {
  * Get all jobs from database
  */
 export async function getAllJobs(): Promise<Job[]> {
-  const model = await getJobModel()
-  if (!MONGODB_ENABLED || !model) {
+  if (!MONGODB_ENABLED || !JobModel) {
     return []
   }
   
   await connectDB()
-  const docs = await model.find({}).lean()
-  return docs.map(doc => ({
+  const docs = await JobModel.find({}).lean()
+  return docs.map((doc: any) => ({
     ...doc,
     createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date()
   })) as Job[]

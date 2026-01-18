@@ -40,7 +40,7 @@ if (mongoose && Schema) {
     isStartup: Boolean
   }, { _id: false })
 
-  const CandidateSchema = new Schema<CandidateDocument>(
+  const CandidateSchema = new Schema(
     {
       id: { type: String, required: true, unique: true },
       jobId: { type: String, required: true, index: true },
@@ -78,7 +78,7 @@ if (mongoose && Schema) {
   CandidateSchema.index({ email: 1 })
 
   // Prevent model re-compilation in Next.js dev mode
-  CandidateModel = mongoose.models?.Candidate || mongoose.model<CandidateDocument>('Candidate', CandidateSchema)
+  CandidateModel = mongoose.models?.Candidate || mongoose.model('Candidate', CandidateSchema)
 }
 
 export default CandidateModel
