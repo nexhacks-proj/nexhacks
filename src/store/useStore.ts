@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { reprocessResumesAction } from '@/app/actions'
 import { Job, Candidate, SwipeAction, AIBucket } from '@/types'
 
 interface AppState {
@@ -30,6 +31,11 @@ interface AppState {
   // New state and actions for ranking
   rankedPendingIds: string[]
   rankPendingCandidatesForCurrentJob: () => void
+
+  // Feedback & Reprocessing
+  isReprocessing: boolean
+  addFeedback: (type: 'likes' | 'dislikes', text: string) => void
+  reprocessCandidates: () => Promise<void>
 }
 
 export const useStore = create<AppState>()(
@@ -43,7 +49,8 @@ export const useStore = create<AppState>()(
         const newJob: Job = {
           ...jobData,
           id: Date.now().toString(),
-          createdAt: new Date()
+          createdAt: new Date(),
+          feedback: { likes: [], dislikes: [] }
         }
         set((state) => ({
           jobs: [...state.jobs, newJob],
@@ -209,6 +216,85 @@ export const useStore = create<AppState>()(
           }
         }
         set({ rankedPendingIds: sortedCandidates.map(c => c.id) })
+      },
+
+      // Feedback & Reprocessing
+      isReprocessing: false,
+
+      addFeedback: (type, text) => {
+        set((state) => {
+          if (!state.currentJob) return state
+          
+          const currentFeedback = state.currentJob.feedback || { likes: [], dislikes: [] }
+          const newFeedback = {
+            ...currentFeedback,
+            [type]: [...currentFeedback[type], text]
+          }
+
+          const updatedJob = { ...state.currentJob, feedback: newFeedback }
+
+          return {
+            currentJob: updatedJob,
+            jobs: state.jobs.map(j => j.id === updatedJob.id ? updatedJob : j)
+          }
+        })
+      },
+
+      reprocessCandidates: async () => {
+        const { currentJob, candidates } = get()
+        if (!currentJob) return
+
+        set({ isReprocessing: true })
+
+        try {
+          // Filter only pending candidates for this job to re-process
+          const pendingCandidates = candidates.filter(c => 
+            c.jobId === currentJob.id && c.status === 'pending'
+          )
+
+          if (pendingCandidates.length === 0) {
+            set({ isReprocessing: false })
+            return
+          }
+
+          // Prepare candidates for batch parsing (we need rawResume)
+          const candidatesToProcess = pendingCandidates.map(c => ({
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            rawResume: c.rawResume
+          }))
+
+          // Re-run the AI parsing with feedback included on the server
+          // The job object passed here ALREADY has the updated feedback from addFeedback
+          console.log("Reprocessing starting with job feedback (Server Action):", currentJob.feedback)
+          const reParsedResults = await reprocessResumesAction(candidatesToProcess, currentJob)
+          console.log("Reprocessing results:", reParsedResults)
+
+          // Update candidates in store with new AI results
+          set((state) => {
+            const updatedCandidates = state.candidates.map(c => {
+              const newVal = reParsedResults.find(r => r.id === c.id)
+              if (newVal) {
+                return {
+                  ...c,
+                  ...newVal, // Overwrite AI fields (bucket, summary, etc.)
+                }
+              }
+              return c
+            })
+            return { candidates: updatedCandidates }
+          })
+
+          // Re-rank
+          get().rankPendingCandidatesForCurrentJob()
+          console.log("Reprocessing and ranking complete")
+
+        } catch (error) {
+          console.error("Failed to reprocess candidates:", error)
+        } finally {
+          set({ isReprocessing: false })
+        }
       },
 
       // Filtering

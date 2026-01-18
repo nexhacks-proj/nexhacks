@@ -6,6 +6,10 @@ export interface Job {
   visaSponsorship: boolean
   startupExperiencePreferred: boolean
   portfolioRequired: boolean
+  feedback?: {
+    likes: string[]
+    dislikes: string[]
+  }
   createdAt: Date
 }
 
