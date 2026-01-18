@@ -229,71 +229,90 @@ export async function batchParseResumes(
   job: Job,
   onProgress?: (completed: number, total: number) => void
 ): Promise<Array<Omit<Candidate, 'jobId'>>> {
-  // Process in batches of 5 resumes per API call to avoid rate limits
-  const BATCH_SIZE = 5
+  // Process in batches - increased from 5 to 8 for better throughput
+  // Process up to 3 batches in parallel for faster overall processing
+  const BATCH_SIZE = 8
+  const MAX_PARALLEL_BATCHES = 3
   const results: Array<Omit<Candidate, 'jobId'>> = []
+  const totalBatches = Math.ceil(candidates.length / BATCH_SIZE)
 
-  for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
-    const batch = candidates.slice(i, i + BATCH_SIZE)
+  // Process batches with controlled parallelism
+  for (let i = 0; i < totalBatches; i += MAX_PARALLEL_BATCHES) {
+    const batchPromises: Promise<void>[] = []
+    
+    // Process up to MAX_PARALLEL_BATCHES batches simultaneously
+    for (let j = 0; j < MAX_PARALLEL_BATCHES && (i + j) < totalBatches; j++) {
+      const batchIndex = i + j
+      const batch = candidates.slice(batchIndex * BATCH_SIZE, (batchIndex + 1) * BATCH_SIZE)
 
-    try {
-      const parsedBatch = await parseMultipleResumesWithAI(batch, job)
+      const batchPromise = (async () => {
+        try {
+          const parsedBatch = await parseMultipleResumesWithAI(batch, job)
 
-      // Match parsed results with original candidates
-      for (const candidate of batch) {
-        const parsed = parsedBatch.find(p => p.id === candidate.id)
-        if (parsed) {
-          const { id, ...parseResult } = parsed
-          results.push({
-            id: candidate.id,
-            name: candidate.name,
-            email: candidate.email,
-            rawResume: candidate.rawResume,
-            ...parseResult,
-            status: 'pending'
-          })
-        } else {
-          // Fallback if ID not found in response
-          results.push({
-            id: candidate.id,
-            name: candidate.name,
-            email: candidate.email,
-            rawResume: candidate.rawResume,
-            skills: [],
-            yearsOfExperience: 0,
-            projects: [],
-            education: [],
-            workHistory: [],
-            topStrengths: ['Unable to parse resume'],
-            standoutProject: 'Resume parsing failed',
-            aiSummary: 'AI parsing failed for this candidate. Please review manually.',
-            status: 'pending'
-          })
+          // Match parsed results with original candidates
+          for (const candidate of batch) {
+            const parsed = parsedBatch.find(p => p.id === candidate.id)
+            if (parsed) {
+              const { id, ...parseResult } = parsed
+              results.push({
+                id: candidate.id,
+                name: candidate.name,
+                email: candidate.email,
+                rawResume: candidate.rawResume,
+                ...parseResult,
+                status: 'pending'
+              })
+            } else {
+              // Fallback if ID not found in response
+              results.push({
+                id: candidate.id,
+                name: candidate.name,
+                email: candidate.email,
+                rawResume: candidate.rawResume,
+                skills: [],
+                yearsOfExperience: 0,
+                projects: [],
+                education: [],
+                workHistory: [],
+                topStrengths: ['Unable to parse resume'],
+                standoutProject: 'Resume parsing failed',
+                aiSummary: 'AI parsing failed for this candidate. Please review manually.',
+                status: 'pending'
+              })
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to parse batch ${batchIndex}:`, error)
+          // Add fallback entries for entire failed batch
+          for (const candidate of batch) {
+            results.push({
+              id: candidate.id,
+              name: candidate.name,
+              email: candidate.email,
+              rawResume: candidate.rawResume,
+              skills: [],
+              yearsOfExperience: 0,
+              projects: [],
+              education: [],
+              workHistory: [],
+              topStrengths: ['Unable to parse resume'],
+              standoutProject: 'Resume parsing failed',
+              aiSummary: 'AI parsing failed for this candidate. Please review manually.',
+              status: 'pending'
+            })
+          }
+        } finally {
+          // Update progress as each batch completes
+          const completed = Math.min((batchIndex + 1) * BATCH_SIZE, candidates.length)
+          onProgress?.(completed, candidates.length)
         }
-      }
-    } catch (error) {
-      console.error(`Failed to parse batch starting at ${i}:`, error)
-      // Add fallback entries for entire failed batch
-      for (const candidate of batch) {
-        results.push({
-          id: candidate.id,
-          name: candidate.name,
-          email: candidate.email,
-          rawResume: candidate.rawResume,
-          skills: [],
-          yearsOfExperience: 0,
-          projects: [],
-          education: [],
-          workHistory: [],
-          topStrengths: ['Unable to parse resume'],
-          standoutProject: 'Resume parsing failed',
-          aiSummary: 'AI parsing failed for this candidate. Please review manually.',
-          status: 'pending'
-        })
-      }
+      })()
+
+      batchPromises.push(batchPromise)
     }
 
-    onProgress?.(Math.min(i + BATCH_SIZE, candidates.length), candidates.length)
+    // Wait for all parallel batches in this group to complete
+    await Promise.all(batchPromises)
   }
 
   return results

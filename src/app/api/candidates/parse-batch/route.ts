@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseMultipleResumesWithAI } from '@/lib/gemini'
+import { batchParseResumes } from '@/lib/gemini'
 import { Job } from '@/types'
 
 interface ResumeInput {
@@ -38,36 +38,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const parsedResults = await parseMultipleResumesWithAI(resumes, job)
+    // Use batchParseResumes for optimized parallel processing
+    const parsedCandidates = await batchParseResumes(resumes, job)
 
-    // Map parsed results back to candidates with full data
-    const candidates = resumes.map(resume => {
-      const parsed = parsedResults.find(p => p.id === resume.id)
-      if (parsed) {
-        const { id, ...parseResult } = parsed
-        return {
-          id: resume.id,
-          name: resume.name,
-          email: resume.email,
-          rawResume: resume.rawResume,
-          ...parseResult
-        }
-      }
-      // Fallback if parsing failed for this resume
-      return {
-        id: resume.id,
-        name: resume.name,
-        email: resume.email,
-        rawResume: resume.rawResume,
-        skills: [],
-        yearsOfExperience: 0,
-        projects: [],
-        education: [],
-        workHistory: [],
-        topStrengths: ['Unable to parse resume'],
-        standoutProject: 'Resume parsing failed',
-        aiSummary: 'AI parsing failed for this candidate. Please review manually.'
-      }
+    // Remove jobId from results (it will be added on the client side)
+    const candidates = parsedCandidates.map(candidate => {
+      const { jobId, ...candidateWithoutJobId } = candidate
+      return candidateWithoutJobId
     })
 
     return NextResponse.json({

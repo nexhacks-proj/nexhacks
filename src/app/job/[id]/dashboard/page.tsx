@@ -14,7 +14,9 @@ import {
   Clock,
   Mail,
   ChevronRight,
-  Layers
+  Layers,
+  Download,
+  Upload
 } from 'lucide-react'
 
 type Tab = 'interested' | 'starred' | 'rejected' | 'pending'
@@ -130,13 +132,22 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => router.push(`/job/${jobId}/swipe`)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-sm"
-            >
-              <Layers className="w-4 h-4" />
-              Continue Swiping
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push(`/job/${jobId}/upload`)}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors text-sm"
+              >
+                <Upload className="w-4 h-4" />
+                Upload More Resumes
+              </button>
+              <button
+                onClick={() => router.push(`/job/${jobId}/swipe`)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-sm"
+              >
+                <Layers className="w-4 h-4" />
+                Continue Swiping
+              </button>
+            </div>
           </div>
 
           {/* Stats Summary */}
@@ -193,22 +204,57 @@ export default function DashboardPage() {
         )}
 
         {/* Bulk Actions */}
-        {activeTab === 'interested' && interested.length > 0 && (
-          <div className="mt-8 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+        <div className="mt-8 space-y-4">
+          {activeTab === 'interested' && interested.length > 0 && (
+            <div className="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+              <h3 className="font-medium text-slate-900 dark:text-white mb-3">
+                Bulk Actions
+              </h3>
+              <button
+                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <Mail className="w-4 h-4" />
+                Send Interview Invites to All ({interested.length})
+              </button>
+              <p className="text-xs text-slate-400 text-center mt-2">
+                This would trigger email templates in a real implementation
+              </p>
+            </div>
+          )}
+
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
             <h3 className="font-medium text-slate-900 dark:text-white mb-3">
-              Bulk Actions
+              Resume Management
             </h3>
             <button
-              className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+              onClick={() => {
+                const allCandidates = [...interested, ...starred, ...rejected, ...pending]
+                if (allCandidates.length === 0) return
+                
+                const resumeText = allCandidates
+                  .map(c => `=== ${c.name} (${c.email}) ===\n\n${c.rawResume}\n\n${'='.repeat(50)}\n\n`)
+                  .join('')
+                
+                const blob = new Blob([resumeText], { type: 'text/plain' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `${currentJob.title.replace(/\s+/g, '_')}_all_resumes.txt`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+              }}
+              className="w-full py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
-              <Mail className="w-4 h-4" />
-              Send Interview Invites to All ({interested.length})
+              <Download className="w-4 h-4" />
+              Download Additional Applicants Resumes
             </button>
             <p className="text-xs text-slate-400 text-center mt-2">
-              This would trigger email templates in a real implementation
+              Downloads all candidate resumes for this job
             </p>
           </div>
-        )}
+        </div>
       </main>
 
       {/* Candidate Detail Modal */}

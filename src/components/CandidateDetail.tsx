@@ -1,7 +1,7 @@
 'use client'
 
 import { Candidate } from '@/types'
-import { X, Heart, Star, User, Briefcase, GraduationCap, Code, FileText } from 'lucide-react'
+import { X, Heart, Star, User, Briefcase, GraduationCap, Code, FileText, Download, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface CandidateDetailProps {
@@ -199,10 +199,29 @@ export default function CandidateDetail({
 
             {/* Raw Resume */}
             <div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
-                <FileText className="w-4 h-4 text-slate-500" />
-                Original Resume
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm sm:text-base">
+                  <FileText className="w-4 h-4 text-slate-500" />
+                  Original Resume
+                </h3>
+                <button
+                  onClick={() => {
+                    const blob = new Blob([candidate.rawResume], { type: 'text/plain' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `${candidate.name.replace(/\s+/g, '_')}_resume.txt`
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                    URL.revokeObjectURL(url)
+                  }}
+                  className="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2 text-xs sm:text-sm"
+                >
+                  <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                  Download Resume
+                </button>
+              </div>
               <pre className="bg-slate-100 dark:bg-slate-700 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap font-mono overflow-x-auto">
                 {candidate.rawResume}
               </pre>
@@ -210,7 +229,14 @@ export default function CandidateDetail({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex-shrink-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 pb-safe">
+          <div className="flex-shrink-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 pb-safe space-y-3">
+            <button
+              onClick={onClose}
+              className="w-full py-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-xl transition-colors flex items-center justify-center gap-2 touch-manipulation text-sm sm:text-base"
+            >
+              <ArrowRight className="w-4 h-4" />
+              Continue Without Downloading Resume
+            </button>
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => onSwipe('left')}

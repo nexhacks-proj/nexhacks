@@ -4,19 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import ResumeUploader from '@/components/ResumeUploader'
-import { mockRawResumes } from '@/data/mockCandidates'
-import { Candidate } from '@/types'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, SkipForward } from 'lucide-react'
 
 export default function UploadCandidatesPage() {
   const router = useRouter()
   const params = useParams()
   const jobId = params.id as string
 
-  const { jobs, currentJob, setCurrentJob, addCandidate } = useStore()
-  const [isLoadingMock, setIsLoadingMock] = useState(false)
-  const [loadProgress, setLoadProgress] = useState({ current: 0, total: 0 })
-  const [mockError, setMockError] = useState<string | null>(null)
+  const { jobs, currentJob, setCurrentJob } = useStore()
 
   useEffect(() => {
     const job = jobs.find(j => j.id === jobId)
@@ -26,54 +21,6 @@ export default function UploadCandidatesPage() {
       router.push('/')
     }
   }, [jobId, jobs, setCurrentJob, router])
-
-  const loadMockCandidates = async () => {
-    if (!currentJob) return
-
-    setIsLoadingMock(true)
-    setMockError(null)
-    setLoadProgress({ current: 0, total: mockRawResumes.length })
-
-    try {
-      // Send all mock resumes in a single batch API call to avoid rate limiting
-      const response = await fetch('/api/candidates/parse-batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resumes: mockRawResumes,
-          job: currentJob
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(errorData.error || `HTTP ${response.status}`)
-      }
-
-      const data = await response.json()
-
-      // Add all parsed candidates to the store
-      for (const candidate of data.candidates) {
-        const parsedCandidate: Candidate = {
-          ...candidate,
-          jobId: currentJob.id,
-          status: 'pending' as const
-        }
-        addCandidate(parsedCandidate)
-      }
-
-      setLoadProgress({ current: mockRawResumes.length, total: mockRawResumes.length })
-      router.push(`/job/${jobId}/swipe`)
-    } catch (error) {
-      console.error('Error loading mock candidates:', error)
-      const errorMsg = error instanceof Error
-        ? error.message
-        : 'Failed to load mock candidates. Please check that GEMINI_API_KEY is set correctly.'
-      setMockError(errorMsg)
-    }
-
-    setIsLoadingMock(false)
-  }
 
   if (!currentJob) {
     return (
@@ -109,9 +56,27 @@ export default function UploadCandidatesPage() {
         <ResumeUploader
           job={currentJob}
           onComplete={(candidateIds) => {
+            // This is called after all candidates are processed (for cleanup/logging)
+          }}
+          onMockComplete={() => {
+            // This is called after all mock candidates are processed
+          }}
+          onFirstCandidateReady={() => {
+            // Navigate immediately when first candidate is ready
             router.push(`/job/${jobId}/swipe`)
           }}
         />
+
+        {/* Skip Upload Button */}
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => router.push(`/job/${jobId}/swipe`)}
+            className="px-6 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl transition-colors flex items-center gap-2 text-base font-medium"
+          >
+            <SkipForward className="w-4 h-4" />
+            Skip Upload and Continue Swiping
+          </button>
+        </div>
 
         {/* Info Box */}
         <div className="mt-6 bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4">
@@ -124,38 +89,6 @@ export default function UploadCandidatesPage() {
             <li>• AI generates tailored summaries based on your job requirements</li>
             <li>• Review candidates in the swipe interface</li>
           </ul>
-        </div>
-
-        {/* Or use mock data */}
-        <div className="mt-6">
-          <div className="text-center mb-4">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-              Or process mock candidates with AI for testing
-            </p>
-            <button
-              onClick={loadMockCandidates}
-              disabled={isLoadingMock}
-              className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 dark:text-slate-200 rounded-lg transition-colors text-sm flex items-center gap-2 mx-auto"
-            >
-              {isLoadingMock && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isLoadingMock ? 'Processing Mock Resumes...' : 'Load Mock Candidates (AI Parsed)'}
-            </button>
-          </div>
-
-          {isLoadingMock && (
-            <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 text-center">
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                Processing {loadProgress.current} of {loadProgress.total} mock candidates with Gemini AI...
-              </p>
-            </div>
-          )}
-
-          {mockError && !isLoadingMock && (
-            <div className="mt-4 bg-danger/10 border border-danger/20 rounded-xl p-4">
-              <p className="text-sm font-medium text-danger mb-1">Mock Data Error</p>
-              <p className="text-sm text-danger/80">{mockError}</p>
-            </div>
-          )}
         </div>
       </main>
     </div>

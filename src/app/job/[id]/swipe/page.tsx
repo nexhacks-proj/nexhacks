@@ -6,7 +6,7 @@ import { useStore } from '@/store/useStore'
 import CandidateCard from '@/components/CandidateCard'
 import CandidateDetail from '@/components/CandidateDetail'
 import { Candidate } from '@/types'
-import { ArrowLeft, RotateCcw, X, Star, Heart, Users, CheckCircle, XCircle } from 'lucide-react'
+import { ArrowLeft, RotateCcw, X, Star, Heart, Users, CheckCircle, XCircle, Upload } from 'lucide-react'
 
 export default function SwipePage() {
   const router = useRouter()
@@ -122,12 +122,21 @@ export default function SwipePage() {
                 {pendingCandidates.length} remaining
               </p>
             </div>
-            <button
-              onClick={() => router.push(`/job/${jobId}/dashboard`)}
-              className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors active:scale-95"
-            >
-              <Users className="w-6 h-6 text-slate-600 dark:text-slate-300" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push(`/job/${jobId}/upload`)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors active:scale-95"
+                title="Upload More Resumes"
+              >
+                <Upload className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+              </button>
+              <button
+                onClick={() => router.push(`/job/${jobId}/dashboard`)}
+                className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors active:scale-95"
+              >
+                <Users className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+              </button>
+            </div>
           </div>
 
           {/* Stats Bar */}
@@ -176,12 +185,21 @@ export default function SwipePage() {
               <p className="text-slate-500 dark:text-slate-400 mb-4">
                 You've reviewed all candidates for this role.
               </p>
-              <button
-                onClick={() => router.push(`/job/${jobId}/dashboard`)}
-                className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-              >
-                View Results
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 items-center">
+                <button
+                  onClick={() => router.push(`/job/${jobId}/upload`)}
+                  className="px-6 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload More Resumes
+                </button>
+                <button
+                  onClick={() => router.push(`/job/${jobId}/dashboard`)}
+                  className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                >
+                  View Results
+                </button>
+              </div>
             </div>
           )}
         </div>
