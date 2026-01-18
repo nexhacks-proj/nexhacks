@@ -26,7 +26,7 @@ import {
 import { Job, Candidate } from '@/types'
 import { useStore } from '@/store/useStore'
 import { extractTextFromFile, validateFileType } from '@/lib/fileConverter'
-import { addToMockResumes, mockRawResumes, mockWorkdayResumes } from '@/data/mockCandidates'
+import { addToMockResumes, mockRawResumes, emailTestResumes, mockWorkdayResumes } from '@/data/mockCandidates'
 
 interface ResumeFile {
   id: string
@@ -231,16 +231,19 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
     }
   }
 
-  const loadMockCandidates = async () => {
+  const loadMockCandidates = async (useEmailTestSet = false) => {
+    const dataSource = useEmailTestSet ? emailTestResumes : mockRawResumes
     setIsLoadingMock(true)
     setError(null)
-    setProgress({ current: 0, total: mockRawResumes.length })
-
+    setProgress({ current: 0, total: dataSource.length })
+    
+    let firstCandidateAdded = false
     const processedIds: string[] = []
 
-    for (let i = 0; i < mockRawResumes.length; i++) {
-      const resume = mockRawResumes[i]
-
+    // Process mock resumes one at a time for progressive loading
+    for (let i = 0; i < dataSource.length; i++) {
+      const resume = dataSource[i]
+      
       try {
         const response = await fetch('/api/candidates/parse-batch', {
           method: 'POST',
@@ -271,7 +274,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
           }
         }
 
-        setProgress({ current: i + 1, total: mockRawResumes.length })
+        setProgress({ current: i + 1, total: dataSource.length })
       } catch (err) {
         console.error(`Error processing mock resume ${i + 1}:`, err)
       }

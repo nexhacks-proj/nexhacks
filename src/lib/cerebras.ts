@@ -1,4 +1,5 @@
 import { AIBucket, Candidate, Job } from '@/types'
+import { traceLLMCall, recordLLMMetrics, getCurrentSpan, LLM_ATTRIBUTES } from './tracing'
 
 // Cerebras API - ultra-fast inference
 const CEREBRAS_API_URL = 'https://api.cerebras.ai/v1/chat/completions'
@@ -102,7 +103,30 @@ IMPORTANT INSTRUCTIONS:
 
 
   try {
-    const text = await callCerebras(prompt)
+    // Wrap the LLM call with Phoenix tracing
+    const text = await traceLLMCall(
+      {
+        agentName: 'resume-parser',
+        agentStep: 'extract',
+        model: 'gpt-oss-120b',
+        userPrompt: prompt,
+        maxTokens: 16000,
+        temperature: 0.1
+      },
+      async () => {
+        const result = await callCerebras(prompt)
+
+        // Record metrics to the current span
+        const currentSpan = getCurrentSpan()
+        if (currentSpan) {
+          currentSpan.setAttribute(LLM_ATTRIBUTES.LLM_RESPONSE_MODEL, 'gpt-oss-120b')
+          // Note: Cerebras doesn't return token counts in the same way,
+          // but we can estimate or leave blank
+        }
+
+        return result
+      }
+    )
 
 
     // Extract JSON from response (handle markdown code blocks if present)
@@ -218,8 +242,30 @@ IMPORTANT INSTRUCTIONS:
 Return ONLY the JSON array. No markdown code blocks.`
 
   try {
-    const text = await callCerebras(prompt)
-    console.log("Cerebras (OSS120B) Raw Response:", text) // DEBUG
+    // Wrap the LLM call with Phoenix tracing
+    const text = await traceLLMCall(
+      {
+        agentName: 'resume-parser',
+        agentStep: 'extract',
+        model: 'gpt-oss-120b',
+        userPrompt: prompt,
+        maxTokens: 16000,
+        temperature: 0.1
+      },
+      async () => {
+        const result = await callCerebras(prompt)
+        console.log("Cerebras (OSS120B) Raw Response:", result) // DEBUG
+
+        // Record metrics to the current span
+        const currentSpan = getCurrentSpan()
+        if (currentSpan) {
+          currentSpan.setAttribute(LLM_ATTRIBUTES.LLM_RESPONSE_MODEL, 'gpt-oss-120b')
+          currentSpan.setAttribute('batch.size', resumes.length)
+        }
+
+        return result
+      }
+    )
 
     // Extract JSON from response (handle markdown code blocks if present)
     let jsonText = text.trim()

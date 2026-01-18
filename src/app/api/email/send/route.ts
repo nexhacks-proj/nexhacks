@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateInterviewEmail, generateHTMLEmail } from '@/lib/email'
+import { generateEmailWithAgent, extractEmailTemplate, FounderPrefs } from '@/lib/emailAgent'
 import { Candidate, Job } from '@/types'
+import nodemailer from 'nodemailer'
 
 interface SendEmailRequest {
   candidate: Candidate
@@ -10,13 +12,19 @@ interface SendEmailRequest {
     company?: string
     email?: string
     schedulingLink?: string
+    title?: string
+    tone?: 'friendly' | 'professional' | 'casual'
+    interviewType?: string
+    timeWindow?: string
+    compensationNote?: string
   }
+  useAgent?: boolean // Set to true to use AI agent, false for template
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: SendEmailRequest = await request.json()
-    const { candidate, job, founderInfo } = body
+    const { candidate, job, founderInfo, useAgent = true } = body
 
     if (!candidate || !candidate.email || !job) {
       return NextResponse.json(
@@ -25,65 +33,94 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate email template
-    const emailTemplate = generateInterviewEmail(candidate, job, founderInfo)
+    let emailTemplate: { subject: string; body: string }
+    let agentMetrics: { latencyMs?: number; inputTokens?: number; outputTokens?: number; model?: string } = {}
+    let interviewPack: { suggested_questions: string[]; internal_notes: string[] } | undefined
+
+    if (useAgent) {
+      // Use AI agent to generate personalized email
+      console.log('[email/send] Using AI agent for email generation')
+
+      const founderPrefs: FounderPrefs = {
+        name: founderInfo?.name,
+        company: founderInfo?.company,
+        title: founderInfo?.title,
+        tone: founderInfo?.tone,
+        interviewType: founderInfo?.interviewType,
+        timeWindow: founderInfo?.timeWindow,
+        schedulingLink: founderInfo?.schedulingLink,
+        compensationNote: founderInfo?.compensationNote
+      }
+
+      const agentResult = await generateEmailWithAgent(candidate, job, founderPrefs)
+
+      if (!agentResult.success || !agentResult.output) {
+        console.warn('[email/send] Agent failed, falling back to template:', agentResult.error)
+        emailTemplate = generateInterviewEmail(candidate, job, founderInfo)
+      } else {
+        emailTemplate = extractEmailTemplate(agentResult.output)
+        interviewPack = agentResult.output.interview_pack
+        agentMetrics = {
+          latencyMs: agentResult.latencyMs,
+          inputTokens: agentResult.inputTokens,
+          outputTokens: agentResult.outputTokens,
+          model: agentResult.model
+        }
+        console.log('[email/send] Agent generated email successfully', agentMetrics)
+      }
+    } else {
+      // Use template-based generation
+      console.log('[email/send] Using template for email generation')
+      emailTemplate = generateInterviewEmail(candidate, job, founderInfo)
+    }
+
     const htmlBody = generateHTMLEmail(emailTemplate)
 
-    // Get Resend API key from environment
-    const resendApiKey = process.env.RESEND_API_KEY
-    if (!resendApiKey) {
-      // In development/demo mode, log the email instead of actually sending
-      console.log('\n📧 EMAIL WOULD BE SENT:')
-      console.log('To:', candidate.email)
-      console.log('Subject:', emailTemplate.subject)
-      console.log('Body:', emailTemplate.body)
-      console.log('---\n')
+    // Get SMTP credentials from environment
+    const smtpUser = process.env.SMTP_USER
+    const smtpPass = process.env.SMTP_PASS
 
-      return NextResponse.json({
-        success: true,
-        sent: false,
-        demo: true,
-        message: 'Email logged (RESEND_API_KEY not configured)',
-        email: {
-          to: candidate.email,
-          subject: emailTemplate.subject,
-          body: emailTemplate.body
-        }
-      })
+    if (!smtpUser || !smtpPass) {
+      return NextResponse.json(
+        { error: 'Email configuration missing. Please set SMTP_USER and SMTP_PASS in .env.local.' },
+        { status: 500 }
+      )
     }
 
-    // Send email via Resend API
-    const resendResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
+    // Create reusable transporter object using the default SMTP transport
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
       },
-      body: JSON.stringify({
-        from: founderInfo?.email || 'onboarding@resend.dev', // Use your verified domain
-        to: candidate.email,
-        subject: emailTemplate.subject,
-        html: htmlBody,
-        text: emailTemplate.body,
-      }),
     })
 
-    if (!resendResponse.ok) {
-      const errorData = await resendResponse.text()
-      console.error('Resend API error:', errorData)
-      throw new Error(`Failed to send email: ${resendResponse.statusText}`)
-    }
+    // Send mail with defined transport object
+    const info = await transporter.sendMail({
+      from: `"${founderInfo?.name || 'Hiring Team'}" <${smtpUser}>`, // sender address
+      to: candidate.email, // list of receivers
+      subject: emailTemplate.subject, // Subject line
+      text: emailTemplate.body, // plain text body
+      html: htmlBody, // html body
+    })
 
-    const result = await resendResponse.json()
+    console.log('Message sent: %s', info.messageId)
 
     return NextResponse.json({
       success: true,
       sent: true,
-      messageId: result.id,
+      messageId: info.messageId,
       email: {
         to: candidate.email,
         subject: emailTemplate.subject,
-      }
+      },
+      ...(useAgent && {
+        agent: {
+          ...agentMetrics,
+          interviewPack
+        }
+      })
     })
   } catch (error) {
     console.error('Error sending email:', error)
