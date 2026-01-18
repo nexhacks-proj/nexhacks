@@ -1,0 +1,21 @@
+{"location":"CandidateCard.tsx:77","message":"Card clicked","data":{"xValue":-134.506640625,"isTop":true},"timestamp":1768751105742,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"CandidateCard.tsx:43","message":"handleDragEnd called","data":{"offsetX":-192.15234375,"feedbackText":"","isTop":true},"timestamp":1768751105757,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"swipe/page.tsx:37","message":"handleSwipe called","data":{"direction":"left","isAnimating":false,"pendingCount":3},"timestamp":1768751105758,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"swipe/page.tsx:49","message":"handleSwipe processing candidate","data":{"candidateId":"workday-1","direction":"left"},"timestamp":1768751105814,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"CandidateCard.tsx:50","message":"Swipe left triggered","data":{"feedbackText":""},"timestamp":1768751105814,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"swipe/page.tsx:58","message":"swipeCandidate called","data":{"candidateId":"workday-1","status":"rejected"},"timestamp":1768751106116,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"swipe/page.tsx:65","message":"handleSwipe completed","data":{"direction":"left"},"timestamp":1768751106116,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"CandidateCard.tsx:77","message":"Card clicked","data":{"xValue":261.57578125,"isTop":true},"timestamp":1768751106687,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"CandidateCard.tsx:43","message":"handleDragEnd called","data":{"offsetX":373.6796875,"feedbackText":"","isTop":true},"timestamp":1768751106690,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"swipe/page.tsx:37","message":"handleSwipe called","data":{"direction":"right","isAnimating":false,"pendingCount":2},"timestamp":1768751106690,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"swipe/page.tsx:49","message":"handleSwipe processing candidate","data":{"candidateId":"workday-3","direction":"right"},"timestamp":1768751106692,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"CandidateCard.tsx:47","message":"Swipe right triggered","data":{"feedbackText":""},"timestamp":1768751106692,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"swipe/page.tsx:58","message":"swipeCandidate called","data":{"candidateId":"workday-3","status":"interested"},"timestamp":1768751106994,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"swipe/page.tsx:65","message":"handleSwipe completed","data":{"direction":"right"},"timestamp":1768751106994,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"CandidateCard.tsx:77","message":"Card clicked","data":{"xValue":-159.95820312499998,"isTop":true},"timestamp":1768751107685,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"CandidateCard.tsx:43","message":"handleDragEnd called","data":{"offsetX":-228.51171875,"feedbackText":"","isTop":true},"timestamp":1768751107688,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"swipe/page.tsx:37","message":"handleSwipe called","data":{"direction":"left","isAnimating":false,"pendingCount":1},"timestamp":1768751107688,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"swipe/page.tsx:49","message":"handleSwipe processing candidate","data":{"candidateId":"workday-2","direction":"left"},"timestamp":1768751107689,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"CandidateCard.tsx:50","message":"Swipe left triggered","data":{"feedbackText":""},"timestamp":1768751107689,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"swipe/page.tsx:58","message":"swipeCandidate called","data":{"candidateId":"workday-2","status":"rejected"},"timestamp":1768751107991,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"swipe/page.tsx:65","message":"handleSwipe completed","data":{"direction":"left"},"timestamp":1768751107991,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}

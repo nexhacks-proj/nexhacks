@@ -348,17 +348,32 @@ export default function Home() {
                         flexDirection: 'column',
                         border: isConfirmingDelete ? 2 : 0,
                         borderColor: isConfirmingDelete ? 'error.main' : 'transparent',
+                        position: 'relative',
+                        overflow: 'visible',
                       }}
                     >
-                      <CardActionArea
+                      <Box
                         onClick={() => {
                           if (!isConfirmingDelete) {
                             setCurrentJob(job)
                             router.push(`/job/${job.id}/swipe`)
                           }
                         }}
-                        disabled={isConfirmingDelete}
-                        sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
+                        sx={{ 
+                          flex: 1, 
+                          p: 2, 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'flex-start',
+                          cursor: isConfirmingDelete ? 'default' : 'pointer',
+                          transition: 'background-color 0.2s',
+                          '&:hover': {
+                            backgroundColor: isConfirmingDelete ? 'transparent' : 'action.hover',
+                          },
+                          '&:not(:last-child)': {
+                            paddingBottom: 0,
+                          },
+                        }}
                       >
                         {isConfirmingDelete ? (
                           <Box sx={{ width: '100%', p: 2 }}>
@@ -370,22 +385,32 @@ export default function Home() {
                                 This will delete {totalJobCandidates} associated candidate{totalJobCandidates === 1 ? '' : 's'}. This action cannot be undone.
                               </Typography>
                             </Alert>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Box 
+                              sx={{ display: 'flex', gap: 1 }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                              }}
+                              data-delete-action="true"
+                            >
                               <Button
                                 variant="contained"
                                 color="error"
                                 size="small"
                                 fullWidth
                                 onClick={(e) => {
+                                  e.preventDefault()
                                   e.stopPropagation()
                                   handleDeleteJob(job.id)
                                 }}
                                 disabled={isDeleting === job.id}
                                 startIcon={isDeleting === job.id ? <CircularProgress size={16} color="inherit" /> : <CheckCircle />}
                                 sx={{
+                                  pointerEvents: 'auto',
                                   transition: 'all 0.2s ease-in-out',
                                   '&:hover:not(:disabled)': {
                                     transform: 'translateY(-1px)',
+                                    boxShadow: 2,
                                   },
                                 }}
                               >
@@ -396,12 +421,14 @@ export default function Home() {
                                 size="small"
                                 fullWidth
                                 onClick={(e) => {
+                                  e.preventDefault()
                                   e.stopPropagation()
                                   handleCancelDelete()
                                 }}
                                 startIcon={<Cancel />}
                                 disabled={isDeleting === job.id}
                                 sx={{
+                                  pointerEvents: 'auto',
                                   transition: 'all 0.2s ease-in-out',
                                   '&:hover:not(:disabled)': {
                                     transform: 'translateY(-1px)',
@@ -469,24 +496,67 @@ export default function Home() {
                             )}
                           </>
                         )}
-                      </CardActionArea>
+                      </Box>
                       {!isConfirmingDelete && (
-                        <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 1 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            {totalJobCandidates} {totalJobCandidates === 1 ? 'candidate' : 'candidates'}
-                          </Typography>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleStartDeleteJob(job.id)
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            zIndex: 10,
+                            pointerEvents: 'auto',
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation()
+                          }}
+                        >
+                          <CardActions 
+                            sx={{ 
+                              justifyContent: 'space-between', 
+                              px: 2, 
+                              pb: 1,
+                              position: 'relative',
+                              zIndex: 10,
+                              pointerEvents: 'auto',
+                              backgroundColor: 'background.paper',
                             }}
-                            aria-label="Delete job"
                           >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        </CardActions>
+                            <Typography variant="caption" color="text.secondary">
+                              {totalJobCandidates} {totalJobCandidates === 1 ? 'candidate' : 'candidates'}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                handleStartDeleteJob(job.id)
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                              }}
+                              aria-label="Delete job"
+                              sx={{
+                                pointerEvents: 'auto',
+                                position: 'relative',
+                                zIndex: 11,
+                                transition: 'all 0.2s ease-in-out',
+                                '&:hover': {
+                                  transform: 'scale(1.1)',
+                                  backgroundColor: 'error.light',
+                                },
+                                '&:active': {
+                                  transform: 'scale(0.95)',
+                                },
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </CardActions>
+                        </Box>
                       )}
                     </Card>
                   </Grid>
