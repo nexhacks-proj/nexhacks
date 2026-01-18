@@ -54,8 +54,16 @@ export default function UploadCandidatesPage() {
           <IconButton
             edge="start"
             color="inherit"
-            onClick={() => router.back()}
-            sx={{ mr: 2, color: 'text.primary' }}
+            onClick={() => router.push(`/job/${jobId}/swipe`)}
+            sx={{ 
+              mr: 2, 
+              color: 'text.primary',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'action.hover',
+                transform: 'scale(1.05)',
+              },
+            }}
           >
             <ArrowBack />
           </IconButton>
@@ -87,7 +95,14 @@ export default function UploadCandidatesPage() {
             variant="outlined"
             startIcon={<SkipNext />}
             onClick={() => router.push(`/job/${jobId}/swipe`)}
-            sx={{ px: 3 }}
+            sx={{ 
+              px: 3,
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-1px)',
+                boxShadow: 2,
+              },
+            }}
           >
             Skip Upload and Continue Swiping
           </Button>

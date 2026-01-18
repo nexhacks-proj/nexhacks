@@ -41,13 +41,22 @@ export default function CandidateCard({
   const rightIndicatorOpacity = useTransform(x, [0, 100], [0, 1])
 
   const handleDragEnd = (_: any, info: PanInfo) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CandidateCard.tsx:43',message:'handleDragEnd called',data:{offsetX:info.offset.x,feedbackText,isTop},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     const threshold = 80
     if (info.offset.x > threshold) {
       setExitDirection('right')
       onSwipe('right', feedbackText)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CandidateCard.tsx:47',message:'Swipe right triggered',data:{feedbackText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
     } else if (info.offset.x < -threshold) {
       setExitDirection('left')
       onSwipe('left', feedbackText)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CandidateCard.tsx:50',message:'Swipe left triggered',data:{feedbackText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
     }
   }
 
@@ -75,6 +84,9 @@ export default function CandidateCard({
       }
       transition={{ type: 'spring', damping: 30, stiffness: 200 }}
       onClick={(e) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CandidateCard.tsx:77',message:'Card clicked',data:{xValue:x.get(),isTop},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         if (Math.abs(x.get()) < 5) {
           onTap()
         }
@@ -191,6 +203,9 @@ export default function CandidateCard({
             </Box>
             <IconButton
               onClick={(e) => {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CandidateCard.tsx:193',message:'Star icon clicked',data:{candidateId:candidate.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
                 e.stopPropagation()
                 onStar()
               }}

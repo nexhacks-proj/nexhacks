@@ -21,6 +21,7 @@ import TextField from '@mui/material/TextField'
 import Alert from '@mui/material/Alert'
 import Collapse from '@mui/material/Collapse'
 import { Work, People, ArrowForward, Bolt, Logout, Delete, AccessTime, Cancel, CheckCircle } from '@mui/icons-material'
+import CircularProgress from '@mui/material/CircularProgress'
 import Logo from '@/components/Logo'
 import { isAuthenticated, logout as authLogout, getUserEmail } from '@/lib/auth'
 
@@ -32,6 +33,8 @@ export default function Home() {
   const [deleteAllConfirmText, setDeleteAllConfirmText] = useState('')
   const [isClient, setIsClient] = useState(false)
   const [isAuth, setIsAuth] = useState(false)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isDeletingAll, setIsDeletingAll] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -49,9 +52,13 @@ export default function Home() {
   }
 
   const handleDeleteJob = (jobId: string) => {
-    deleteJob(jobId)
-    setJobToDelete(null)
-    // If no jobs left, stay on home page (which will show empty state)
+    setIsDeleting(jobId)
+    // Small delay for visual feedback
+    setTimeout(() => {
+      deleteJob(jobId)
+      setJobToDelete(null)
+      setIsDeleting(null)
+    }, 150)
   }
 
   const handleStartDeleteJob = (jobId: string) => {
@@ -60,10 +67,14 @@ export default function Home() {
 
   const handleDeleteAllConfirm = () => {
     if (deleteAllConfirmText.toLowerCase() === 'delete all') {
-      deleteAllJobs()
-      setShowDeleteAll(false)
-      setDeleteAllConfirmText('')
-      router.push('/')
+      setIsDeletingAll(true)
+      setTimeout(() => {
+        deleteAllJobs()
+        setShowDeleteAll(false)
+        setDeleteAllConfirmText('')
+        setIsDeletingAll(false)
+        router.push('/')
+      }, 200)
     }
   }
 
@@ -258,11 +269,17 @@ export default function Home() {
                     size="small"
                     color="error"
                     variant="contained"
-                    disabled={deleteAllConfirmText.toLowerCase() !== 'delete all'}
+                    disabled={deleteAllConfirmText.toLowerCase() !== 'delete all' || isDeletingAll}
                     onClick={handleDeleteAllConfirm}
-                    startIcon={<CheckCircle />}
+                    startIcon={isDeletingAll ? <CircularProgress size={16} color="inherit" /> : <CheckCircle />}
+                    sx={{
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover:not(:disabled)': {
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
                   >
-                    Confirm
+                    {isDeletingAll ? 'Deleting...' : 'Confirm'}
                   </Button>
                   <Button
                     size="small"
@@ -271,6 +288,13 @@ export default function Home() {
                       setDeleteAllConfirmText('')
                     }}
                     startIcon={<Cancel />}
+                    disabled={isDeletingAll}
+                    sx={{
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover:not(:disabled)': {
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
                   >
                     Cancel
                   </Button>
@@ -326,47 +350,70 @@ export default function Home() {
                         borderColor: isConfirmingDelete ? 'error.main' : 'transparent',
                       }}
                     >
-                      {isConfirmingDelete ? (
-                        <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                          <Alert severity="error" sx={{ mb: 2 }}>
-                            <Typography variant="body2" fontWeight={600} gutterBottom>
-                              Delete "{job.title}"?
-                            </Typography>
-                            <Typography variant="body2">
-                              This will delete {totalJobCandidates} associated candidate{totalJobCandidates === 1 ? '' : 's'}. This action cannot be undone.
-                            </Typography>
-                          </Alert>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button
-                              variant="contained"
-                              color="error"
-                              size="small"
-                              fullWidth
-                              onClick={() => handleDeleteJob(job.id)}
-                              startIcon={<CheckCircle />}
-                            >
-                              Confirm Delete
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              fullWidth
-                              onClick={handleCancelDelete}
-                              startIcon={<Cancel />}
-                            >
-                              Cancel
-                            </Button>
+                      <CardActionArea
+                        onClick={() => {
+                          if (!isConfirmingDelete) {
+                            setCurrentJob(job)
+                            router.push(`/job/${job.id}/swipe`)
+                          }
+                        }}
+                        disabled={isConfirmingDelete}
+                        sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
+                      >
+                        {isConfirmingDelete ? (
+                          <Box sx={{ width: '100%', p: 2 }}>
+                            <Alert severity="error" sx={{ mb: 2 }}>
+                              <Typography variant="body2" fontWeight={600} gutterBottom>
+                                Delete "{job.title}"?
+                              </Typography>
+                              <Typography variant="body2">
+                                This will delete {totalJobCandidates} associated candidate{totalJobCandidates === 1 ? '' : 's'}. This action cannot be undone.
+                              </Typography>
+                            </Alert>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Button
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                fullWidth
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteJob(job.id)
+                                }}
+                                disabled={isDeleting === job.id}
+                                startIcon={isDeleting === job.id ? <CircularProgress size={16} color="inherit" /> : <CheckCircle />}
+                                sx={{
+                                  transition: 'all 0.2s ease-in-out',
+                                  '&:hover:not(:disabled)': {
+                                    transform: 'translateY(-1px)',
+                                  },
+                                }}
+                              >
+                                {isDeleting === job.id ? 'Deleting...' : 'Confirm Delete'}
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                fullWidth
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCancelDelete()
+                                }}
+                                startIcon={<Cancel />}
+                                disabled={isDeleting === job.id}
+                                sx={{
+                                  transition: 'all 0.2s ease-in-out',
+                                  '&:hover:not(:disabled)': {
+                                    transform: 'translateY(-1px)',
+                                  },
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </Box>
                           </Box>
-                        </Box>
-                      ) : (
-                        <>
-                          <CardActionArea
-                            onClick={() => {
-                              setCurrentJob(job)
-                              router.push(`/job/${job.id}/swipe`)
-                            }}
-                            sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
-                          >
+                        ) : (
+                          <>
                             <Box sx={{ width: '100%', mb: 1.5 }}>
                               <Typography variant="h6" component="h3" sx={{ fontWeight: 600, mb: 0.5 }}>
                                 {job.title}
@@ -420,24 +467,26 @@ export default function Home() {
                                 </Box>
                               </Box>
                             )}
-                          </CardActionArea>
-                          <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 1 }}>
-                            <Typography variant="caption" color="text.secondary">
-                              {totalJobCandidates} {totalJobCandidates === 1 ? 'candidate' : 'candidates'}
-                            </Typography>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleStartDeleteJob(job.id)
-                              }}
-                              aria-label="Delete job"
-                            >
-                              <Delete fontSize="small" />
-                            </IconButton>
-                          </CardActions>
-                        </>
+                          </>
+                        )}
+                      </CardActionArea>
+                      {!isConfirmingDelete && (
+                        <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 1 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {totalJobCandidates} {totalJobCandidates === 1 ? 'candidate' : 'candidates'}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleStartDeleteJob(job.id)
+                            }}
+                            aria-label="Delete job"
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </CardActions>
                       )}
                     </Card>
                   </Grid>
@@ -459,6 +508,13 @@ export default function Home() {
               size="large"
               endIcon={<ArrowForward />}
               onClick={() => router.push('/job/new')}
+              sx={{
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4,
+                },
+              }}
             >
               Create Your First Job
             </Button>
