@@ -851,6 +851,38 @@ Leveraging emerging technologies to disrupt traditional paradigms and create sus
   }
 ]
 
+// Specialized mock resumes for testing email functionality
+export const emailTestResumes = [
+  {
+    id: 'email-test-1',
+    name: 'Strong Candidate (Test)',
+    email: 'dpnimo11@gmail.com',
+    rawResume: `Strong Candidate
+Senior Developer
+
+EXPERIENCE
+Tech Giant | Senior Engineer | 2020-Present
+- Led major initiatives
+- Excellent track record
+
+SKILLS
+TypeScript, React, Node.js, Leadership`
+  },
+  {
+    id: 'email-test-2',
+    name: 'Weak Candidate (Test)',
+    email: 'pzq0406@gmail.com',
+    rawResume: `Weak Candidate
+Junior Developer
+
+EXPERIENCE
+None yet
+
+SKILLS
+Basic HTML`
+  }
+]
+
 export function getRawResumesForJob(jobId: string) {
   return mockRawResumes.map(r => ({
     ...r,
