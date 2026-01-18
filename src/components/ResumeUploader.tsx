@@ -5,8 +5,7 @@ import { Upload, FileText, X, Loader2, CheckCircle, AlertCircle, Sparkles, Mail 
 import { Job, Candidate } from '@/types'
 import { useStore } from '@/store/useStore'
 import { extractTextFromFile, validateFileType } from '@/lib/fileConverter'
-import { addToMockResumes, mockRawResumes, emailTestResumes } from '@/data/mockCandidates'
-import { addToMockResumes, mockRawResumes, mockWorkdayResumes } from '@/data/mockCandidates'
+import { addToMockResumes, mockRawResumes, emailTestResumes, mockWorkdayResumes } from '@/data/mockCandidates'
 
 interface ResumeFile {
   id: string
