@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseResumeWithAI } from '@/lib/gemini'
+import { parseResumeWithAI } from '@/lib/cerebras'
 import { saveCandidate } from '@/lib/candidateStore'
 import { Job, Candidate } from '@/types'
 
-// This endpoint uses Gemini AI for resume parsing
+// This endpoint uses Cerebras AI for resume parsing
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Debug: Check environment variable
-    console.log('[DEBUG] GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY)
+    console.log('[DEBUG] CEREBRAS_API_KEY exists:', !!process.env.CEREBRAS_API_KEY)
     console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV)
     
-    // Use Gemini AI to parse the resume
+    // Use Cerebras AI to parse the resume
     const parsed = await parseResumeWithAI(rawResume, job as Job)
 
     // Generate candidate ID

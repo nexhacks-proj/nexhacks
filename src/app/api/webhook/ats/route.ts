@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseResumeWithAI } from '@/lib/gemini'
+import { parseResumeWithAI } from '@/lib/cerebras'
 import { addWebhookCandidate } from '@/lib/webhookStore'
 import { Job, Candidate } from '@/types'
 

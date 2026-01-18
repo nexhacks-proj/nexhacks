@@ -5,7 +5,7 @@ A mobile-first web app that helps early-stage startup founders screen job applic
 ## Features
 
 - **Quick Job Setup**: Define role requirements with structured filters (tech stack, experience level, preferences)
-- **AI Resume Parsing**: Upload resumes and let Gemini AI extract skills, experience, and generate summaries
+- **AI Resume Parsing**: Upload resumes and let Cerebras AI extract skills, experience, and generate summaries
 - **Batch Processing**: Process multiple resumes in a single API call for speed
 - **ATS Webhook Integration**: Connect to Workday, Greenhouse, Lever, or any ATS via webhook
 - **Swipe Interface**: Make quick yes/no decisions with intuitive swipe gestures
@@ -18,13 +18,13 @@ A mobile-first web app that helps early-stage startup founders screen job applic
 - Tailwind CSS
 - Framer Motion (swipe animations)
 - Zustand (state management)
-- Google Gemini AI (resume parsing)
+- Cerebras AI (resume parsing)
 
 ## Getting Started
 
-### 1. Get your Gemini API Key
+### 1. Get your Cerebras API Key
 
-1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+1. Go to [Cerebras Cloud](https://cloud.cerebras.ai/)
 2. Create a new API key
 3. Copy your API key
 
@@ -32,7 +32,7 @@ A mobile-first web app that helps early-stage startup founders screen job applic
 
 ```bash
 # Create .env.local file
-echo "GEMINI_API_KEY=your_api_key_here" > .env.local
+echo "CEREBRAS_API_KEY=your_api_key_here" > .env.local
 
 # Optional: Add webhook API key for ATS integration
 echo "WEBHOOK_API_KEY=your_secret_key" >> .env.local
@@ -325,7 +325,7 @@ src/
 ├── data/
 │   └── mockCandidates.ts       # 20 sample resumes
 ├── lib/
-│   ├── gemini.ts               # Gemini AI integration
+│   ├── cerebras.ts             # Cerebras AI integration
 │   ├── fileConverter.ts        # PDF/DOCX extraction
 │   └── webhookStore.ts         # Webhook candidate storage
 ├── store/
@@ -338,7 +338,7 @@ src/
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GEMINI_API_KEY` | Yes | Google Gemini API key |
+| `CEREBRAS_API_KEY` | Yes | Cerebras API key |
 | `WEBHOOK_API_KEY` | No | Secret key for ATS webhook auth |
 
 ## License

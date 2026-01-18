@@ -307,7 +307,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
           Upload Resumes or Paste Text
         </h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-          Resumes are processed immediately with Gemini AI
+          Resumes are processed immediately with Cerebras AI
         </p>
         <p className="text-xs text-slate-400 mb-4">
           Supports PDF, Word (.docx), and text files
@@ -438,7 +438,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
         <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-6 text-center">
           <Loader2 className="w-8 h-8 text-primary-500 animate-spin mx-auto mb-3" />
           <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
-            {isLoadingMock ? 'Processing Mock Candidates with Gemini AI...' : 'Processing with Gemini AI...'}
+            {isLoadingMock ? 'Processing Mock Candidates with Cerebras AI...' : 'Processing with Cerebras AI...'}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {progress.current} of {progress.total} candidates analyzed

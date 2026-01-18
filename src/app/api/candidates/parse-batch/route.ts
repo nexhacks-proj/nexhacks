@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseMultipleResumesWithAI } from '@/lib/gemini'
+import { parseMultipleResumesWithAI } from '@/lib/cerebras'
 import { saveCandidates } from '@/lib/candidateStore'
 import { Job, Candidate } from '@/types'
 
@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
         topStrengths: ['Unable to parse resume'],
         standoutProject: 'Resume parsing failed',
         aiSummary: 'AI parsing failed for this candidate. Please review manually.',
+        aiBucket: 'average', // Default bucket
         status: 'pending' as const
       }
     })
