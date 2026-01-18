@@ -326,56 +326,47 @@ export default function Home() {
                         borderColor: isConfirmingDelete ? 'error.main' : 'transparent',
                       }}
                     >
-                      <CardActionArea
-                        onClick={() => {
-                          if (!isConfirmingDelete) {
-                            setCurrentJob(job)
-                            router.push(`/job/${job.id}/swipe`)
-                          }
-                        }}
-                        disabled={isConfirmingDelete}
-                        sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
-                      >
-                        {isConfirmingDelete ? (
-                          <Box sx={{ width: '100%', p: 2 }}>
-                            <Alert severity="error" sx={{ mb: 2 }}>
-                              <Typography variant="body2" fontWeight={600} gutterBottom>
-                                Delete "{job.title}"?
-                              </Typography>
-                              <Typography variant="body2">
-                                This will delete {totalJobCandidates} associated candidate{totalJobCandidates === 1 ? '' : 's'}. This action cannot be undone.
-                              </Typography>
-                            </Alert>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <Button
-                                variant="contained"
-                                color="error"
-                                size="small"
-                                fullWidth
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeleteJob(job.id)
-                                }}
-                                startIcon={<CheckCircle />}
-                              >
-                                Confirm Delete
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                fullWidth
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleCancelDelete()
-                                }}
-                                startIcon={<Cancel />}
-                              >
-                                Cancel
-                              </Button>
-                            </Box>
+                      {isConfirmingDelete ? (
+                        <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                          <Alert severity="error" sx={{ mb: 2 }}>
+                            <Typography variant="body2" fontWeight={600} gutterBottom>
+                              Delete "{job.title}"?
+                            </Typography>
+                            <Typography variant="body2">
+                              This will delete {totalJobCandidates} associated candidate{totalJobCandidates === 1 ? '' : 's'}. This action cannot be undone.
+                            </Typography>
+                          </Alert>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                              variant="contained"
+                              color="error"
+                              size="small"
+                              fullWidth
+                              onClick={() => handleDeleteJob(job.id)}
+                              startIcon={<CheckCircle />}
+                            >
+                              Confirm Delete
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              fullWidth
+                              onClick={handleCancelDelete}
+                              startIcon={<Cancel />}
+                            >
+                              Cancel
+                            </Button>
                           </Box>
-                        ) : (
-                          <>
+                        </Box>
+                      ) : (
+                        <>
+                          <CardActionArea
+                            onClick={() => {
+                              setCurrentJob(job)
+                              router.push(`/job/${job.id}/swipe`)
+                            }}
+                            sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
+                          >
                             <Box sx={{ width: '100%', mb: 1.5 }}>
                               <Typography variant="h6" component="h3" sx={{ fontWeight: 600, mb: 0.5 }}>
                                 {job.title}
@@ -429,26 +420,24 @@ export default function Home() {
                                 </Box>
                               </Box>
                             )}
-                          </>
-                        )}
-                      </CardActionArea>
-                      {!isConfirmingDelete && (
-                        <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 1 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            {totalJobCandidates} {totalJobCandidates === 1 ? 'candidate' : 'candidates'}
-                          </Typography>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleStartDeleteJob(job.id)
-                            }}
-                            aria-label="Delete job"
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        </CardActions>
+                          </CardActionArea>
+                          <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 1 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              {totalJobCandidates} {totalJobCandidates === 1 ? 'candidate' : 'candidates'}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleStartDeleteJob(job.id)
+                              }}
+                              aria-label="Delete job"
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </CardActions>
+                        </>
                       )}
                     </Card>
                   </Grid>
