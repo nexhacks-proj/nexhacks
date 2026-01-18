@@ -44,7 +44,7 @@ const SKILL_PATTERNS: { tag: string; patterns: RegExp[] }[] = [
 
 export default function NewJobPage() {
   const router = useRouter()
-  const { createJob, setCurrentJob } = useStore()
+  const { createJob } = useStore()
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -127,12 +127,12 @@ export default function NewJobPage() {
         createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
       }
 
-      // Update store with new job
-      const currentJobs = useStore.getState().jobs
+      // Update store with new job - merge both approaches into one
+      const { jobs: currentJobs } = useStore.getState()
       useStore.setState({
         jobs: [...currentJobs, jobWithDates],
+        currentJob: jobWithDates, // Set currentJob directly in setState instead of separate call
       })
-      setCurrentJob(jobWithDates)
 
       router.push(`/job/${job.id}/upload`)
     } catch (error) {
