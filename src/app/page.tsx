@@ -48,18 +48,14 @@ export default function Home() {
     router.push('/login')
   }
 
-  const handleDeleteJob = (jobId: string, jobTitle: string) => {
-    if (jobToDelete === jobId) {
-      // Confirm deletion
-      deleteJob(jobId)
-      setJobToDelete(null)
-      if (jobs.length === 1) {
-        router.push('/')
-      }
-    } else {
-      // Show confirmation UI
-      setJobToDelete(jobId)
-    }
+  const handleDeleteJob = (jobId: string) => {
+    deleteJob(jobId)
+    setJobToDelete(null)
+    // If no jobs left, stay on home page (which will show empty state)
+  }
+
+  const handleStartDeleteJob = (jobId: string) => {
+    setJobToDelete(jobId)
   }
 
   const handleDeleteAllConfirm = () => {
@@ -358,7 +354,7 @@ export default function Home() {
                                 fullWidth
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleDeleteJob(job.id, job.title)
+                                  handleDeleteJob(job.id)
                                 }}
                                 startIcon={<CheckCircle />}
                               >
@@ -446,7 +442,7 @@ export default function Home() {
                             color="error"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleDeleteJob(job.id, job.title)
+                              handleStartDeleteJob(job.id)
                             }}
                             aria-label="Delete job"
                           >
