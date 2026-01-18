@@ -26,6 +26,10 @@ interface AppState {
   getInterestedCandidates: () => Candidate[]
   getRejectedCandidates: () => Candidate[]
   getStarredCandidates: () => Candidate[]
+
+  // New state and actions for ranking
+  rankedPendingIds: string[]
+  rankPendingCandidatesForCurrentJob: () => void
 }
 
 export const useStore = create<AppState>()(
@@ -50,12 +54,21 @@ export const useStore = create<AppState>()(
       },
 
       setCurrentJob: (job) => {
+        const { currentJob, rankedPendingIds } = get()
+        // Only re-rank if the job has changed or if we don't have a ranking yet
+        // Handle null job case safely
+        const shouldRank = !currentJob || !job || currentJob.id !== job.id || rankedPendingIds.length === 0
+        
         set({ currentJob: job })
-        // Don't auto-load - candidates are uploaded or loaded manually
+        
+        if (shouldRank) {
+          get().rankPendingCandidatesForCurrentJob()
+        }
       },
 
       // Candidates
       candidates: [],
+      rankedPendingIds: [],
 
       loadCandidatesForJob: (jobId) => {
         // No longer auto-loads mock data
@@ -66,12 +79,14 @@ export const useStore = create<AppState>()(
         set((state) => ({
           candidates: [...state.candidates, candidate]
         }))
+        get().rankPendingCandidatesForCurrentJob()
       },
 
       addCandidates: (candidates) => {
         set((state) => ({
           candidates: [...state.candidates, ...candidates]
         }))
+        get().rankPendingCandidatesForCurrentJob()
       },
 
       getCandidateById: (id) => {
@@ -113,19 +128,21 @@ export const useStore = create<AppState>()(
           swipeHistory: state.swipeHistory.slice(0, -1)
         }))
       },
-
-      // Filtering
-      getPendingCandidates: () => {
+      
+      rankPendingCandidatesForCurrentJob: () => {
         const { candidates, currentJob } = get()
-        if (!currentJob) return []
+        if (!currentJob) {
+          set({ rankedPendingIds: [] })
+          return
+        }
 
         const pending = candidates.filter(c => c.jobId === currentJob.id && c.status === 'pending')
 
         // 1. Define bucket weights. Higher weight means more likely to be picked.
         const bucketWeights: Record<AIBucket, number> = {
-          top: 5,
-          strong: 4,
-          average: 3,
+          top: 16,
+          strong: 8,
+          average: 4,
           weak: 2,
           poor: 1
         }
@@ -156,7 +173,6 @@ export const useStore = create<AppState>()(
           const b = bucket as AIBucket
           const weight = bucketWeights[b]
           for (let i = 0; i < weight; i++) {
-            // Only add the bucket to the sampling list if there are candidates in it
             if (candidatesByBucket[b] && candidatesByBucket[b].length > 0) {
               weightedBucketList.push(b)
             }
@@ -165,28 +181,17 @@ export const useStore = create<AppState>()(
         
         // 4. Build the final sorted list.
         const sortedCandidates: Candidate[] = []
-        const candidatePointers: Record<AIBucket, number> = {
-          top: 0,
-          strong: 0,
-          average: 0,
-          weak: 0,
-          poor: 0
-        }
+        const candidatePointers: Record<AIBucket, number> = { top: 0, strong: 0, average: 0, weak: 0, poor: 0 }
 
         while (sortedCandidates.length < pending.length) {
           if (weightedBucketList.length === 0) {
-             // This can happen if some candidates don't have a valid bucket.
-             // Add remaining candidates to avoid an infinite loop.
              const remaining = pending.filter(c => !sortedCandidates.find(sc => sc.id === c.id));
              sortedCandidates.push(...remaining);
              break;
           }
 
-          // Randomly select a bucket based on weight
           const randomBucketIndex = Math.floor(Math.random() * weightedBucketList.length)
           const selectedBucket = weightedBucketList[randomBucketIndex]
-
-          // Get the next candidate from that bucket
           const candidateIndex = candidatePointers[selectedBucket]
           const candidate = candidatesByBucket[selectedBucket][candidateIndex]
           
@@ -195,10 +200,7 @@ export const useStore = create<AppState>()(
             candidatePointers[selectedBucket]++
           }
 
-
-          // If we've used all candidates from that bucket, remove it from future sampling
           if (candidatePointers[selectedBucket] >= candidatesByBucket[selectedBucket].length) {
-            // Remove all instances of this bucket from the weighted list
             for (let i = weightedBucketList.length - 1; i >= 0; i--) {
               if (weightedBucketList[i] === selectedBucket) {
                 weightedBucketList.splice(i, 1)
@@ -206,8 +208,23 @@ export const useStore = create<AppState>()(
             }
           }
         }
+        set({ rankedPendingIds: sortedCandidates.map(c => c.id) })
+      },
 
-        return sortedCandidates
+      // Filtering
+      getPendingCandidates: () => {
+        const { candidates, currentJob, rankedPendingIds } = get()
+        if (!currentJob) return []
+        
+        const candidateMap = new Map(candidates.map(c => [c.id, c]))
+
+        const orderedCandidates = rankedPendingIds
+          .map(id => candidateMap.get(id))
+          .filter((c): c is Candidate => 
+            !!c && c.jobId === currentJob.id && c.status === 'pending'
+          )
+
+        return orderedCandidates
       },
 
       getInterestedCandidates: () => {
