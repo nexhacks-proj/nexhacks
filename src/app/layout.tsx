@@ -8,6 +8,10 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'SwipeHire - Fast Startup Hiring',
   description: 'Screen candidates in minutes, not hours',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -35,8 +39,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className={`${inter.className} h-full overscroll-none`}>
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <body className={`${inter.className} h-full overscroll-none`} suppressHydrationWarning>
         <ThemeProvider>
           <div className="min-h-full supports-[padding:env(safe-area-inset-bottom)]:pb-safe">
             {children}

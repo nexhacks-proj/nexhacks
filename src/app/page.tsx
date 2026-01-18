@@ -21,11 +21,13 @@ import TextField from '@mui/material/TextField'
 import Alert from '@mui/material/Alert'
 import Collapse from '@mui/material/Collapse'
 import { Work, People, ArrowForward, Bolt, Logout, Delete, AccessTime, Cancel, CheckCircle } from '@mui/icons-material'
+import { useTheme } from '@mui/material/styles'
 import CircularProgress from '@mui/material/CircularProgress'
 import Logo from '@/components/Logo'
 import { isAuthenticated, logout as authLogout, getUserEmail } from '@/lib/auth'
 
 export default function Home() {
+  const theme = useTheme()
   const router = useRouter()
   const { jobs, setCurrentJob, deleteJob, deleteAllJobs, candidates } = useStore()
   const [jobToDelete, setJobToDelete] = useState<string | null>(null)
@@ -94,7 +96,21 @@ export default function Home() {
       {/* Header */}
       <AppBar position="static" elevation={1} sx={{ backgroundColor: 'background.paper', color: 'text.primary' }}>
         <Toolbar sx={{ maxWidth: 'xl', width: '100%', mx: 'auto', justifyContent: 'space-between' }}>
-          <Logo size="medium" />
+          <Box
+            sx={{
+              position: 'relative',
+              '&:hover .logo-svg': {
+                filter: 'drop-shadow(0 0 4px rgba(88, 203, 178, 0.4)) drop-shadow(0 0 10px rgba(88, 203, 178, 0.2)) brightness(1.05)',
+              },
+              '&:hover .logo-text': {
+                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : '#1a1a1a',
+                textShadow: '0 0 3px rgba(88, 203, 178, 0.3), 0 0 8px rgba(88, 203, 178, 0.2), 0 0 16px rgba(88, 203, 178, 0.1)',
+                filter: 'brightness(1.1)',
+              },
+            }}
+          >
+            <Logo size="medium" />
+          </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="body2" color="text.secondary">
               {getUserEmail() || 'admin'}
@@ -112,34 +128,95 @@ export default function Home() {
       </AppBar>
 
       {/* Hero Section */}
-      <Container maxWidth="lg" sx={{ flex: 1, py: 6, px: { xs: 2, sm: 3 } }}>
-        <Box sx={{ textAlign: 'center', mb: 6 }}>
+      <Container maxWidth="lg" sx={{ flex: 1, py: { xs: 4, md: 8 }, px: { xs: 2, sm: 3 } }}>
+        <Box 
+          sx={{ 
+            textAlign: 'center',
+            mb: { xs: 5, md: 8 },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
           <Typography
-            variant="h2"
+            variant="h1"
             component="h1"
-            gutterBottom
             sx={{
-              fontWeight: 500,
-              mb: 2,
-              fontSize: { xs: '2.5rem', md: '3rem' },
+              fontWeight: 700,
+              mb: 3,
+              fontSize: { xs: '2.25rem', sm: '3rem', md: '3.75rem' },
+              lineHeight: 1.3,
+              letterSpacing: '-0.02em',
+              color: 'text.primary',
+              overflow: 'visible',
             }}
           >
-            Screen Candidates in Minutes,
+            Stop drowning in resumes.
             <br />
-            Not Hours
+            <Box
+              component="span"
+              sx={{
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.success.main} 100%)`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                display: 'inline-block',
+                lineHeight: 1.3,
+                overflow: 'visible',
+              }}
+            >
+              Start hiring.
+            </Box>
           </Typography>
           <Typography
             variant="body1"
             sx={{
-              maxWidth: 600,
-              mx: 'auto',
-              fontSize: '1.125rem',
+              maxWidth: 580,
+              fontSize: { xs: '1rem', md: '1.25rem' },
               color: 'text.secondary',
+              lineHeight: 1.7,
+              mb: 4,
+              mx: 'auto',
             }}
           >
-            AI-powered candidate cards let you make quick, instinct-driven hiring decisions
-            with a simple swipe interface.
+            Swipe through candidate summaries like you're reviewing a deck. 
+            Trust your gut. Make decisions in seconds, not hours.
           </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Button
+              variant="contained"
+              size="large"
+              endIcon={<ArrowForward />}
+              onClick={(e) => {
+                e.preventDefault()
+                try {
+                  router.push('/job/new')
+                } catch (error) {
+                  console.error('Navigation error:', error)
+                  window.location.href = '/job/new'
+                }
+              }}
+              sx={{ 
+                px: 4, 
+                py: 1.75,
+                fontSize: '1rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                borderRadius: 3,
+                boxShadow: 4,
+                '&:hover': {
+                  boxShadow: 6,
+                  transform: 'translateY(-2px)',
+                },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Create Your First Job
+            </Button>
+            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+              No credit card required
+            </Typography>
+          </Box>
         </Box>
 
         {/* Features */}
@@ -314,11 +391,17 @@ export default function Home() {
 
         {/* Existing Jobs */}
         {jobs.length > 0 ? (
-          <Card elevation={2} sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Your Jobs ({jobs.length})
+          <Box>
+            <Box sx={{ mb: 3, pl: 3, borderLeft: `3px solid ${theme.palette.primary.main}`, opacity: 0.8 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+                Your Jobs
               </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {jobs.length} active {jobs.length === 1 ? 'position' : 'positions'}
+              </Typography>
+            </Box>
+            <Card elevation={0} sx={{ p: 3, border: `1px solid ${theme.palette.divider}`, borderRadius: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Button
                 variant="outlined"
                 color="error"
@@ -563,7 +646,8 @@ export default function Home() {
                 )
               })}
             </Grid>
-          </Card>
+            </Card>
+          </Box>
         ) : (
           <Card elevation={2} sx={{ p: 4, textAlign: 'center' }}>
             <Work sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />

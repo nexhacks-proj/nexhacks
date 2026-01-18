@@ -1,0 +1,28 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Circular background with gradient for visibility -->
+  <defs>
+    <linearGradient id="circleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#58CBB2" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#36A98C" stop-opacity="0.25"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="60" fill="url(#circleGradient)"/>
+  <circle cx="64" cy="64" r="60" fill="none" stroke="#58CBB2" stroke-width="2" stroke-opacity="0.3"/>
+  
+  <!-- Back chevron (darker teal) - bigger and centered -->
+  <path
+    d="M38 64 L54 48 L54 80 Z"
+    fill="#36A98C"
+    stroke="#36A98C"
+    stroke-width="1"
+    stroke-linejoin="round"
+  />
+  <!-- Front chevron (brighter teal) - bigger and centered, aligned -->
+  <path
+    d="M46 64 L62 48 L62 80 Z"
+    fill="#58CBB2"
+    stroke="#58CBB2"
+    stroke-width="1"
+    stroke-linejoin="round"
+  />
+</svg>
