@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { Candidate, Job } from '@/types'
+import { AIBucket, Candidate, Job } from '@/types'
 
 const getGeminiKey = () => {
   // Try multiple sources for the API key
@@ -44,13 +44,14 @@ interface ResumeParseResult {
   topStrengths: string[]
   standoutProject: string
   aiSummary: string
+  aiBucket: AIBucket
 }
 
 export async function parseResumeWithAI(
   rawResume: string,
   job: Job
 ): Promise<ResumeParseResult> {
-  const prompt = `You are an expert technical recruiter analyzing resumes for a startup hiring manager.
+  const prompt = `You are an expert technical recruiter analyzing resumes for a startup hiring manager. Your goal is to not just parse the resume, but to also categorize the candidate's fit for a specific role.
 
 JOB REQUIREMENTS:
 - Role: ${job.title}
@@ -61,7 +62,7 @@ JOB REQUIREMENTS:
 RESUME:
 ${rawResume}
 
-TASK: Parse this resume and provide a structured analysis optimized for quick hiring decisions. Return ONLY valid JSON with this exact structure:
+TASK: Parse this resume, provide a structured analysis, and rank the candidate. Return ONLY valid JSON with this exact structure:
 
 {
   "skills": ["skill1", "skill2", ...],
@@ -96,14 +97,18 @@ TASK: Parse this resume and provide a structured analysis optimized for quick hi
     "strength 3 (specific to this role)"
   ],
   "standoutProject": "The single most impressive thing this candidate has done (1-2 sentences). Focus on impact and scale.",
-  "aiSummary": "2-3 sentence hiring manager summary. Is this a good fit? What are the trade-offs? Be honest and direct."
+  "aiSummary": "2-3 sentence hiring manager summary. Is this a good fit? What are the trade-offs? Be honest and direct.",
+  "aiBucket": "<'top' | 'strong' | 'average' | 'weak' | 'poor'>"
 }
 
-IMPORTANT:
-- topStrengths should be 3 bullet points highlighting why this candidate fits THIS specific role
-- standoutProject should be the ONE most impressive accomplishment
-- aiSummary should be candid - mention both strengths AND concerns/gaps
-- Return ONLY the JSON object, no markdown, no explanations`
+IMPORTANT INSTRUCTIONS:
+1.  **Bucketing:** Based on the ENTIRE resume and how it matches the job requirements, assign the candidate to one of these 5 buckets:
+    - 'top': Exceptional candidate, a near-perfect match. Checks all the boxes and more. (90th percentile)
+    - 'strong': Very good candidate, meets most key requirements. (75th percentile)
+    - 'average': Decent candidate, meets some requirements but has gaps. (50th percentile)
+    - 'weak': Poor fit, missing most key requirements. (25th percentile)
+    - 'poor': Completely unqualified. (10th percentile)
+2.  **JSON ONLY:** Return ONLY the JSON object, no markdown, no explanations, no text before or after the JSON.`
 
   try {
     const model = getModel()
@@ -140,7 +145,7 @@ export async function parseMultipleResumesWithAI(
     `=== RESUME ${idx + 1} (ID: ${r.id}) ===\n${r.rawResume}\n=== END RESUME ${idx + 1} ===`
   ).join('\n\n')
 
-  const prompt = `You are an expert technical recruiter analyzing MULTIPLE resumes for a startup hiring manager.
+  const prompt = `You are an expert technical recruiter analyzing MULTIPLE resumes for a startup hiring manager. Your goal is to not just parse the resumes, but to also categorize each candidate's fit for a specific role.
 
 JOB REQUIREMENTS:
 - Role: ${job.title}
@@ -151,7 +156,7 @@ JOB REQUIREMENTS:
 RESUMES TO ANALYZE:
 ${resumesText}
 
-TASK: Parse ALL ${resumes.length} resumes above and provide structured analysis for EACH candidate. Return ONLY a valid JSON array with one object per resume, in the SAME ORDER as provided above.
+TASK: Parse ALL ${resumes.length} resumes above and provide a structured analysis for EACH candidate. Return ONLY a valid JSON array with one object per resume, in the SAME ORDER as provided above.
 
 Each object in the array must have this exact structure:
 {
@@ -188,16 +193,19 @@ Each object in the array must have this exact structure:
     "strength 3 (specific to this role)"
   ],
   "standoutProject": "The single most impressive thing this candidate has done (1-2 sentences). Focus on impact and scale.",
-  "aiSummary": "2-3 sentence hiring manager summary. Is this a good fit? What are the trade-offs? Be honest and direct."
+  "aiSummary": "2-3 sentence hiring manager summary. Is this a good fit? What are the trade-offs? Be honest and direct.",
+  "aiBucket": "<'top' | 'strong' | 'average' | 'weak' | 'poor'>"
 }
 
-IMPORTANT:
-- Return a JSON ARRAY with exactly ${resumes.length} objects
-- Each object MUST include the "id" field matching the resume ID
-- topStrengths should be 3 bullet points highlighting why this candidate fits THIS specific role
-- standoutProject should be the ONE most impressive accomplishment
-- aiSummary should be candid - mention both strengths AND concerns/gaps
-- Return ONLY the JSON array, no markdown, no explanations`
+IMPORTANT INSTRUCTIONS:
+1.  **Bucketing:** For EACH candidate, based on their ENTIRE resume and how it matches the job requirements, assign them to one of these 5 buckets:
+    - 'top': Exceptional candidate, a near-perfect match. Checks all the boxes and more. (90th percentile)
+    - 'strong': Very good candidate, meets most key requirements. (75th percentile)
+    - 'average': Decent candidate, meets some requirements but has gaps. (50th percentile)
+    - 'weak': Poor fit, missing most key requirements. (25th percentile)
+    - 'poor': Completely unqualified. (10th percentile)
+2.  **JSON ARRAY ONLY:** Return a JSON ARRAY with exactly ${resumes.length} objects. Each object MUST include the "id" field matching the resume ID.
+3.  NO extra text: Return ONLY the JSON array, no markdown, no explanations, nothing else.`
 
   try {
     const model = getModel()
@@ -267,6 +275,7 @@ export async function batchParseResumes(
             topStrengths: ['Unable to parse resume'],
             standoutProject: 'Resume parsing failed',
             aiSummary: 'AI parsing failed for this candidate. Please review manually.',
+            aiBucket: 'average', // Default bucket
             status: 'pending'
           })
         }
@@ -288,6 +297,7 @@ export async function batchParseResumes(
           topStrengths: ['Unable to parse resume'],
           standoutProject: 'Resume parsing failed',
           aiSummary: 'AI parsing failed for this candidate. Please review manually.',
+          aiBucket: 'average', // Default bucket
           status: 'pending'
         })
       }
@@ -298,3 +308,4 @@ export async function batchParseResumes(
 
   return results
 }
+
