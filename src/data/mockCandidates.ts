@@ -1,4 +1,78 @@
 // Mock raw resumes - these will be parsed by AI when loaded
+export const mockWorkdayResumes = [
+  {
+    id: 'workday-1',
+    name: 'Elena Rodriguez',
+    email: 'elena.rodriguez@email.com',
+    rawResume: `Elena Rodriguez
+Senior Product Manager
+
+EXPERIENCE
+Workday | Senior Product Manager | 2021-Present
+- Led the launch of Workday Talent Marketplace, achieving 1M+ MAU in first year
+- Managed cross-functional team of 15 engineers and designers
+- Defined product roadmap and strategy for HR analytics suite
+
+Salesforce | Product Manager | 2018-2021
+- Owned features for Sales Cloud mobile app
+- Increased user engagement by 25% through UX improvements
+
+EDUCATION
+MBA, UC Berkeley Haas School of Business, 2018
+BS Computer Science, UT Austin, 2013
+
+SKILLS
+Product Management, Agile, SQL, Data Analysis, Enterprise SaaS, UX Design`
+  },
+  {
+    id: 'workday-2',
+    name: 'Samuel Okonjo',
+    email: 'samuel.okonjo@email.com',
+    rawResume: `Samuel Okonjo
+Enterprise Architect
+
+EXPERIENCE
+Oracle | Principal Architect | 2019-Present
+- Designed cloud migration strategy for Fortune 100 clients
+- specialized in high-availability distributed systems
+- Led technical due diligence for 3 acquisitions
+
+IBM | Senior Solution Architect | 2015-2019
+- Architected hybrid cloud solutions using Red Hat OpenShift
+- Published 2 white papers on enterprise security patterns
+
+EDUCATION
+MS Computer Science, Georgia Tech, 2015
+BS Information Technology, University of Lagos, 2011
+
+SKILLS
+Cloud Architecture, AWS, Azure, Microservices, Java, Kubernetes, Enterprise Security`
+  },
+  {
+    id: 'workday-3',
+    name: 'Wei Zhang',
+    email: 'wei.zhang@email.com',
+    rawResume: `Wei Zhang
+HRIS Analyst
+
+EXPERIENCE
+Adobe | HR Systems Analyst | 2022-Present
+- Administrator for Workday HCM and Payroll modules
+- Automated reporting processes using Python, saving 20 hours/week
+- Led integration project with Greenhouse ATS
+
+ServiceNow | HR Operations Specialist | 2020-2022
+- Managed employee lifecycle data for 5000+ employees
+- Improved data accuracy by 95% through validation scripts
+
+EDUCATION
+BS Business Information Systems, San Jose State University, 2020
+
+SKILLS
+Workday HCM, Python, SQL, Tableau, HR Operations, System Integration`
+  }
+]
+
 export const mockRawResumes = [
   {
     id: 'mock-1',

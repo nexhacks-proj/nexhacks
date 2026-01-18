@@ -56,14 +56,12 @@ export default function UploadCandidatesPage() {
         <ResumeUploader
           job={currentJob}
           onComplete={(candidateIds) => {
-            // This is called after all candidates are processed (for cleanup/logging)
+             // Navigate ONLY when uploading is fully done or manually skipped
+             router.push(`/job/${jobId}/swipe`)
           }}
           onMockComplete={() => {
-            // This is called after all mock candidates are processed
-          }}
-          onFirstCandidateReady={() => {
-            // Navigate immediately when first candidate is ready
-            router.push(`/job/${jobId}/swipe`)
+             // Same for mock candidates
+             router.push(`/job/${jobId}/swipe`)
           }}
         />
 

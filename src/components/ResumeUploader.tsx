@@ -5,7 +5,7 @@ import { Upload, FileText, X, Loader2, CheckCircle, AlertCircle, Sparkles } from
 import { Job, Candidate } from '@/types'
 import { useStore } from '@/store/useStore'
 import { extractTextFromFile, validateFileType } from '@/lib/fileConverter'
-import { addToMockResumes, mockRawResumes } from '@/data/mockCandidates'
+import { addToMockResumes, mockRawResumes, mockWorkdayResumes } from '@/data/mockCandidates'
 
 interface ResumeFile {
   id: string
@@ -18,10 +18,9 @@ interface ResumeUploaderProps {
   job: Job
   onComplete: (candidateIds: string[]) => void
   onMockComplete?: () => void
-  onFirstCandidateReady?: () => void
 }
 
-export default function ResumeUploader({ job, onComplete, onMockComplete, onFirstCandidateReady }: ResumeUploaderProps) {
+export default function ResumeUploader({ job, onComplete, onMockComplete }: ResumeUploaderProps) {
   const { addCandidate } = useStore()
   const [resumes, setResumes] = useState<ResumeFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -158,11 +157,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
             addCandidate(parsedCandidate)
             processedIds.push(candidate.id)
             
-            // Navigate to swipe page as soon as first candidate is ready
-            if (!firstCandidateAdded && onFirstCandidateReady) {
-              firstCandidateAdded = true
-              onFirstCandidateReady()
-            }
+            // Navigation happens only when all are done or user skips
           }
         }
 
@@ -271,11 +266,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
             addCandidate(parsedCandidate)
             processedIds.push(candidate.id)
             
-            // Navigate to swipe page as soon as first candidate is ready
-            if (!firstCandidateAdded && onFirstCandidateReady) {
-              firstCandidateAdded = true
-              onFirstCandidateReady()
-            }
+            // Navigation happens only when all are done or user skips
           }
         }
 
@@ -296,6 +287,54 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
         onComplete(processedIds)
       }
     }
+  }
+
+  const loadWorkdayCandidates = async () => {
+    setIsLoadingMock(true)
+    setError(null)
+    setProgress({ current: 0, total: mockWorkdayResumes.length })
+    
+    // Process workday resumes one at a time for progressive loading
+    for (let i = 0; i < mockWorkdayResumes.length; i++) {
+      const resume = mockWorkdayResumes[i]
+      
+      try {
+        const response = await fetch('/api/candidates/parse-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resumes: [resume], 
+            job
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error(`Failed to parse workday resume ${i + 1}:`, errorData.error || 'Unknown error')
+          continue
+        }
+
+        const data = await response.json()
+
+        if (data.candidates && data.candidates.length > 0) {
+          for (const candidate of data.candidates) {
+            const parsedCandidate: Candidate = {
+              ...candidate,
+              jobId: job.id,
+              status: 'pending' as const
+            }
+            addCandidate(parsedCandidate)
+          }
+        }
+
+        setProgress({ current: i + 1, total: mockWorkdayResumes.length })
+      } catch (err) {
+        console.error(`Error processing workday resume ${i + 1}:`, err)
+      }
+    }
+
+    setIsLoadingMock(false)
+    
   }
 
   return (
@@ -343,6 +382,26 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
                 <>
                   <Sparkles className="w-4 h-4" />
                   Load Mock Candidates
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="flex justify-center mt-3">
+            <button
+              onClick={loadWorkdayCandidates}
+              disabled={isProcessing || isLoadingMock}
+              className={`px-6 py-3 bg-[#005cb9]/10 hover:bg-[#005cb9]/20 text-[#005cb9] dark:text-blue-400 rounded-xl transition-colors text-base font-medium flex items-center justify-center gap-2 ${isProcessing || isLoadingMock ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isLoadingMock ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                  Import from Workday (Demo)
                 </>
               )}
             </button>
