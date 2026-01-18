@@ -226,8 +226,15 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
     setIsProcessing(false)
 
     if (processedIds.length > 0) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ResumeUploader.tsx:226',message:'processResumes completed, calling onComplete',data:{processedIdsCount:processedIds.length,jobId:job.id,hasOnComplete:!!onComplete},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       onComplete(processedIds)
       setResumes([])
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ResumeUploader.tsx:230',message:'processResumes completed but no processedIds',data:{processedIdsCount:0,jobId:job.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
     }
   }
 
@@ -283,11 +290,24 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
     setIsLoadingMock(false)
 
     if (processedIds.length > 0) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ResumeUploader.tsx:283',message:'loadMockCandidates completed',data:{processedIdsCount:processedIds.length,jobId:job.id,hasOnMockComplete:!!onMockComplete,hasOnComplete:!!onComplete},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       if (onMockComplete) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ResumeUploader.tsx:286',message:'Calling onMockComplete',data:{jobId:job.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         onMockComplete()
       } else {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ResumeUploader.tsx:289',message:'Calling onComplete (fallback)',data:{jobId:job.id,processedIdsCount:processedIds.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         onComplete(processedIds)
       }
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ResumeUploader.tsx:293',message:'loadMockCandidates completed but no processedIds',data:{processedIdsCount:0,jobId:job.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
     }
   }
 

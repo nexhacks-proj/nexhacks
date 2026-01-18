@@ -21,7 +21,6 @@ import InputAdornment from '@mui/material/InputAdornment'
 import CircularProgress from '@mui/material/CircularProgress'
 import Tooltip from '@mui/material/Tooltip'
 import Divider from '@mui/material/Divider'
-import Alert from '@mui/material/Alert'
 import { 
   ArrowBack, 
   Add, 
@@ -31,7 +30,6 @@ import {
   Code, 
   School, 
   Public,
-  AutoAwesome,
   Info,
   TrendingUp,
   BusinessCenter,
@@ -308,21 +306,6 @@ export default function NewJobPage() {
                   </IconButton>
                 </Tooltip>
               </Box>
-              <Alert 
-                severity="info" 
-                icon={<AutoAwesome />}
-                sx={{ 
-                  mb: 2,
-                  borderRadius: 2,
-                  '& .MuiAlert-message': {
-                    fontSize: '0.875rem',
-                  },
-                }}
-              >
-                <Typography variant="body2">
-                  <strong>Pro tip:</strong> Mention technologies in your description and we'll automatically add them to your tech stack.
-                </Typography>
-              </Alert>
               <TextField
                 fullWidth
                 multiline

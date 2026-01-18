@@ -318,12 +318,9 @@ export default function CandidateCard({
               variant="body2"
               sx={{
                 fontSize: '0.875rem',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
                 lineHeight: 1.4,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
               }}
             >
               {candidate.standoutProject}
@@ -339,12 +336,9 @@ export default function CandidateCard({
                 fontSize: '0.875rem',
                 fontStyle: 'italic',
                 color: 'text.secondary',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
                 lineHeight: 1.4,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
               }}
             >
               "{candidate.aiSummary}"
