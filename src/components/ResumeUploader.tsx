@@ -1,7 +1,28 @@
 'use client'
 
 import { useState } from 'react'
-import { Upload, FileText, X, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react'
+import Paper from '@mui/material/Paper'
+import Button from '@mui/material/Button'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import Box from '@mui/material/Box'
+import LinearProgress from '@mui/material/LinearProgress'
+import CircularProgress from '@mui/material/CircularProgress'
+import Alert from '@mui/material/Alert'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemText from '@mui/material/ListItemText'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import IconButton from '@mui/material/IconButton'
+import Divider from '@mui/material/Divider'
+import {
+  CloudUpload,
+  Description,
+  Close,
+  CheckCircle,
+  Error as ErrorIcon,
+  AutoAwesome,
+} from '@mui/icons-material'
 import { Job, Candidate } from '@/types'
 import { useStore } from '@/store/useStore'
 import { extractTextFromFile, validateFileType } from '@/lib/fileConverter'
@@ -40,7 +61,6 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
     setConversionProgress({ current: 0, total: files.length })
     const newResumes: ResumeFile[] = []
 
-    // Process files in parallel for faster conversion
     const filePromises = Array.from(files).map(async (file, i) => {
       const validation = validateFileType(file)
       if (!validation.valid) {
@@ -51,7 +71,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
       try {
         const text = await extractTextFromFile(file)
         setConversionProgress({ current: i + 1, total: files.length })
-        
+
         const emailMatch = text.match(/[\w.-]+@[\w.-]+\.\w+/)
         const email = emailMatch ? emailMatch[0] : `candidate${Date.now()}-${i}@example.com`
 
@@ -59,7 +79,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
           id: `upload-${Date.now()}-${i}`,
           name: file.name.replace(/\.[^/.]+$/, ''),
           email,
-          rawResume: text
+          rawResume: text,
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to read file'
@@ -71,7 +91,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
 
     const results = await Promise.all(filePromises)
     const validResumes = results.filter((r): r is ResumeFile => r !== null)
-    
+
     for (const resume of validResumes) {
       addToMockResumes(resume)
     }
@@ -105,7 +125,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
       id: `paste-${Date.now()}`,
       name: `Candidate ${Date.now()}`,
       email,
-      rawResume: resumeText
+      rawResume: resumeText,
     }
 
     addToMockResumes(newResume)
@@ -114,29 +134,27 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
   }
 
   const removeResume = (id: string) => {
-    setResumes(resumes.filter(r => r.id !== id))
+    setResumes(resumes.filter((r) => r.id !== id))
   }
 
   const processResumesImmediately = async (resumesToProcess: ResumeFile[]) => {
     setIsProcessing(true)
     setError(null)
     setProgress({ current: 0, total: resumesToProcess.length })
-    
-    let firstCandidateAdded = false
+
     const processedIds: string[] = []
 
-    // Process resumes one at a time for progressive loading
     for (let i = 0; i < resumesToProcess.length; i++) {
       const resume = resumesToProcess[i]
-      
+
       try {
         const response = await fetch('/api/candidates/parse-batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            resumes: [resume], // Process one at a time
-            job
-          })
+            resumes: [resume],
+            job,
+          }),
         })
 
         if (!response.ok) {
@@ -152,25 +170,21 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
             const parsedCandidate: Candidate = {
               ...candidate,
               jobId: job.id,
-              status: 'pending' as const
+              status: 'pending' as const,
             }
             addCandidate(parsedCandidate)
             processedIds.push(candidate.id)
-            
-            // Navigation happens only when all are done or user skips
           }
         }
 
         setProgress({ current: i + 1, total: resumesToProcess.length })
       } catch (err) {
         console.error(`Error processing resume ${i + 1}:`, err)
-        // Continue processing other resumes even if one fails
       }
     }
 
     setIsProcessing(false)
-    
-    // Call onComplete with all processed IDs (even if navigation already happened)
+
     if (processedIds.length > 0) {
       onComplete(processedIds)
     }
@@ -191,8 +205,8 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           resumes,
-          job
-        })
+          job,
+        }),
       })
 
       if (!response.ok) {
@@ -206,7 +220,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
         const parsedCandidate: Candidate = {
           ...candidate,
           jobId: job.id,
-          status: 'pending' as const
+          status: 'pending' as const,
         }
         addCandidate(parsedCandidate)
         processedIds.push(candidate.id)
@@ -230,22 +244,20 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
     setIsLoadingMock(true)
     setError(null)
     setProgress({ current: 0, total: mockRawResumes.length })
-    
-    let firstCandidateAdded = false
+
     const processedIds: string[] = []
 
-    // Process mock resumes one at a time for progressive loading
     for (let i = 0; i < mockRawResumes.length; i++) {
       const resume = mockRawResumes[i]
-      
+
       try {
         const response = await fetch('/api/candidates/parse-batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            resumes: [resume], // Process one at a time
-            job
-          })
+            resumes: [resume],
+            job,
+          }),
         })
 
         if (!response.ok) {
@@ -261,25 +273,21 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
             const parsedCandidate: Candidate = {
               ...candidate,
               jobId: job.id,
-              status: 'pending' as const
+              status: 'pending' as const,
             }
             addCandidate(parsedCandidate)
             processedIds.push(candidate.id)
-            
-            // Navigation happens only when all are done or user skips
           }
         }
 
         setProgress({ current: i + 1, total: mockRawResumes.length })
       } catch (err) {
         console.error(`Error processing mock resume ${i + 1}:`, err)
-        // Continue processing other resumes even if one fails
       }
     }
 
     setIsLoadingMock(false)
-    
-    // Call onMockComplete or onComplete with all processed IDs
+
     if (processedIds.length > 0) {
       if (onMockComplete) {
         onMockComplete()
@@ -293,19 +301,18 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
     setIsLoadingMock(true)
     setError(null)
     setProgress({ current: 0, total: mockWorkdayResumes.length })
-    
-    // Process workday resumes one at a time for progressive loading
+
     for (let i = 0; i < mockWorkdayResumes.length; i++) {
       const resume = mockWorkdayResumes[i]
-      
+
       try {
         const response = await fetch('/api/candidates/parse-batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            resumes: [resume], 
-            job
-          })
+            resumes: [resume],
+            job,
+          }),
         })
 
         if (!response.ok) {
@@ -321,7 +328,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
             const parsedCandidate: Candidate = {
               ...candidate,
               jobId: job.id,
-              status: 'pending' as const
+              status: 'pending' as const,
             }
             addCandidate(parsedCandidate)
           }
@@ -334,192 +341,195 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
     }
 
     setIsLoadingMock(false)
-    
   }
 
   return (
-    <div className="space-y-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {/* Upload Area */}
-      <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center">
-        <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 4,
+          textAlign: 'center',
+          borderStyle: 'dashed',
+          borderWidth: 2,
+          borderColor: 'divider',
+        }}
+      >
+        <CloudUpload sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
           Upload Resumes or Paste Text
-        </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+        </Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
           Resumes are processed immediately with Cerebras AI
-        </p>
-        <p className="text-xs text-slate-400 mb-4">
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
           Supports PDF, Word (.docx), and text files
-        </p>
+        </Typography>
 
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <label className="inline-block">
-              <input
-                type="file"
-                multiple
-                accept=".txt,.pdf,.docx,.doc,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={handleFileUpload}
-                className="hidden"
+        <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, justifyContent: 'center' }}>
+            <input
+              type="file"
+              multiple
+              accept=".txt,.pdf,.docx,.doc,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+              id="file-upload"
+              disabled={isProcessing || isLoadingMock}
+            />
+            <label htmlFor="file-upload">
+              <Button
+                component="span"
+                variant="contained"
+                startIcon={isProcessing ? <CircularProgress size={16} color="inherit" /> : <CloudUpload />}
                 disabled={isProcessing || isLoadingMock}
-              />
-              <span className={`px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl cursor-pointer inline-block transition-colors text-base font-medium ${isProcessing || isLoadingMock ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              >
                 {isProcessing ? 'Processing...' : 'Upload Resumes'}
-              </span>
+              </Button>
             </label>
 
-            <button
+            <Button
+              variant="outlined"
+              startIcon={isLoadingMock ? <CircularProgress size={16} /> : <AutoAwesome />}
               onClick={loadMockCandidates}
               disabled={isProcessing || isLoadingMock}
-              className={`px-6 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl transition-colors text-base font-medium flex items-center justify-center gap-2 ${isProcessing || isLoadingMock ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isLoadingMock ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Load Mock Candidates
-                </>
-              )}
-            </button>
-          </div>
+              {isLoadingMock ? 'Processing...' : 'Load Mock Candidates'}
+            </Button>
+          </Box>
 
-          <div className="flex justify-center mt-3">
-            <button
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Button
+              variant="outlined"
               onClick={loadWorkdayCandidates}
               disabled={isProcessing || isLoadingMock}
-              className={`px-6 py-3 bg-[#005cb9]/10 hover:bg-[#005cb9]/20 text-[#005cb9] dark:text-blue-400 rounded-xl transition-colors text-base font-medium flex items-center justify-center gap-2 ${isProcessing || isLoadingMock ? 'opacity-50 cursor-not-allowed' : ''}`}
+              sx={{ color: '#005cb9', borderColor: '#005cb9' }}
             >
-              {isLoadingMock ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                  Import from Workday (Demo)
-                </>
-              )}
-            </button>
-          </div>
+              {isLoadingMock ? 'Importing...' : 'Import from Workday (Demo)'}
+            </Button>
+          </Box>
 
-          <div className="text-sm text-slate-400">or</div>
+          <Divider sx={{ my: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              or
+            </Typography>
+          </Divider>
 
-          <div className="space-y-2">
-            <textarea
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
               placeholder="Paste or type resume text here..."
               value={manualText}
               onChange={(e) => setManualText(e.target.value)}
               onPaste={handlePaste}
               disabled={isProcessing || isLoadingMock}
-              className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[100px] disabled:opacity-50 disabled:cursor-not-allowed resize-y"
             />
             {manualText.trim() && !isProcessing && !isLoadingMock && (
-              <button
-                onClick={() => handleManualSubmit()}
-                className="w-full px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-sm font-medium"
-              >
+              <Button variant="contained" onClick={() => handleManualSubmit()} size="small">
                 Process Text
-              </button>
+              </Button>
             )}
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Paper>
 
       {/* Resume List */}
       {resumes.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-slate-900 dark:text-white">
+        <Paper elevation={2} sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="subtitle2" fontWeight={500}>
               Ready to Process ({resumes.length})
-            </h4>
+            </Typography>
             {!isProcessing && (
-              <button
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<CheckCircle />}
                 onClick={processResumes}
-                className="px-4 py-2 bg-success hover:bg-success/80 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
+                size="small"
               >
-                <CheckCircle className="w-4 h-4" />
                 Process with AI
-              </button>
+              </Button>
             )}
-          </div>
+          </Box>
 
-          <div className="space-y-2">
-            {resumes.map((resume) => (
-              <div
-                key={resume.id}
-                className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-slate-400" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">
-                      {resume.name}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {resume.email}
-                    </p>
-                  </div>
-                </div>
-                {!isProcessing && (
-                  <button
-                    onClick={() => removeResume(resume.id)}
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded"
-                  >
-                    <X className="w-4 h-4 text-slate-400" />
-                  </button>
-                )}
-              </div>
+          <List>
+            {resumes.map((resume, index) => (
+              <Box key={resume.id}>
+                <ListItem
+                  secondaryAction={
+                    !isProcessing ? (
+                      <IconButton edge="end" onClick={() => removeResume(resume.id)}>
+                        <Close />
+                      </IconButton>
+                    ) : null
+                  }
+                >
+                  <ListItemIcon>
+                    <Description color="action" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={resume.name}
+                    secondary={resume.email}
+                    primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+                    secondaryTypographyProps={{ variant: 'caption' }}
+                  />
+                </ListItem>
+                {index < resumes.length - 1 && <Divider variant="inset" component="li" />}
+              </Box>
             ))}
-          </div>
-        </div>
+          </List>
+        </Paper>
       )}
 
       {/* File Conversion State */}
       {isConvertingFiles && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 text-center">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-3" />
-          <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+        <Paper elevation={2} sx={{ p: 3, textAlign: 'center', backgroundColor: 'info.light' }}>
+          <CircularProgress size={32} sx={{ mb: 2 }} />
+          <Typography variant="body2" fontWeight={500} gutterBottom>
             Converting files...
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
             {conversionProgress.current} of {conversionProgress.total} files converted
-          </p>
-        </div>
+          </Typography>
+        </Paper>
       )}
 
       {/* Processing State */}
       {(isProcessing || isLoadingMock) && (
-        <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-6 text-center">
-          <Loader2 className="w-8 h-8 text-primary-500 animate-spin mx-auto mb-3" />
-          <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+        <Paper elevation={2} sx={{ p: 3, textAlign: 'center', backgroundColor: 'primary.light' }}>
+          <CircularProgress size={32} sx={{ mb: 2 }} color="primary" />
+          <Typography variant="body2" fontWeight={500} gutterBottom>
             {isLoadingMock ? 'Processing Mock Candidates with Cerebras AI...' : 'Processing with Cerebras AI...'}
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
             {progress.current} of {progress.total} candidates analyzed
-          </p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+          </Typography>
+          <Box sx={{ mt: 2, width: '100%' }}>
+            <LinearProgress
+              variant="determinate"
+              value={(progress.current / progress.total) * 100}
+              sx={{ height: 8, borderRadius: 4 }}
+            />
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
             This may take a moment for large batches...
-          </p>
-        </div>
+          </Typography>
+        </Paper>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="bg-danger/10 border border-danger/20 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-danger mb-1">Error</p>
-              <p className="text-sm text-danger/80">{error}</p>
-            </div>
-          </div>
-        </div>
+        <Alert severity="error" icon={<ErrorIcon />}>
+          <Typography variant="body2" fontWeight={500} gutterBottom>
+            Error
+          </Typography>
+          <Typography variant="body2">{error}</Typography>
+        </Alert>
       )}
-    </div>
+    </Box>
   )
 }

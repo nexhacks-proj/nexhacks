@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import ThemeProvider from '@/components/ThemeProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -33,9 +34,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className={`${inter.className} h-full overscroll-none`}>
-        <div className="min-h-full bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 supports-[padding:env(safe-area-inset-bottom)]:pb-safe">
-          {children}
-        </div>
+        <ThemeProvider>
+          <div className="min-h-full supports-[padding:env(safe-area-inset-bottom)]:pb-safe">
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   )

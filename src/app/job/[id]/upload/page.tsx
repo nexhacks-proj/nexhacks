@@ -1,10 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import ResumeUploader from '@/components/ResumeUploader'
-import { ArrowLeft, SkipForward } from 'lucide-react'
+import AppBar from '@mui/material/AppBar'
+import Toolbar from '@mui/material/Toolbar'
+import IconButton from '@mui/material/IconButton'
+import Typography from '@mui/material/Typography'
+import Container from '@mui/material/Container'
+import Button from '@mui/material/Button'
+import Paper from '@mui/material/Paper'
+import Box from '@mui/material/Box'
+import CircularProgress from '@mui/material/CircularProgress'
+import { ArrowBack, SkipNext } from '@mui/icons-material'
 
 export default function UploadCandidatesPage() {
   const router = useRouter()
@@ -14,7 +23,7 @@ export default function UploadCandidatesPage() {
   const { jobs, currentJob, setCurrentJob } = useStore()
 
   useEffect(() => {
-    const job = jobs.find(j => j.id === jobId)
+    const job = jobs.find((j) => j.id === jobId)
     if (job) {
       setCurrentJob(job)
     } else {
@@ -24,71 +33,95 @@ export default function UploadCandidatesPage() {
 
   if (!currentJob) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
-      </div>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <CircularProgress />
+      </Box>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* Header */}
-      <header className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button
+      <AppBar position="sticky" elevation={1} sx={{ backgroundColor: 'background.paper' }}>
+        <Toolbar sx={{ maxWidth: 'md', width: '100%', mx: 'auto', px: { xs: 2, sm: 3 } }}>
+          <IconButton
+            edge="start"
+            color="inherit"
             onClick={() => router.back()}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            sx={{ mr: 2, color: 'text.primary' }}
           >
-            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-          </button>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900 dark:text-white">
+            <ArrowBack />
+          </IconButton>
+          <Box>
+            <Typography variant="h6" component="div" sx={{ color: 'text.primary', fontWeight: 500 }}>
               Upload Candidates
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
               {currentJob.title}
-            </p>
-          </div>
-        </div>
-      </header>
+            </Typography>
+          </Box>
+        </Toolbar>
+      </AppBar>
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <Container maxWidth="md" sx={{ py: 3, px: { xs: 2, sm: 3 } }}>
         <ResumeUploader
           job={currentJob}
           onComplete={(candidateIds) => {
-             // Navigate ONLY when uploading is fully done or manually skipped
-             router.push(`/job/${jobId}/swipe`)
+            router.push(`/job/${jobId}/swipe`)
           }}
           onMockComplete={() => {
-             // Same for mock candidates
-             router.push(`/job/${jobId}/swipe`)
+            router.push(`/job/${jobId}/swipe`)
           }}
         />
 
         {/* Skip Upload Button */}
-        <div className="mt-6 flex justify-center">
-          <button
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+          <Button
+            variant="outlined"
+            startIcon={<SkipNext />}
             onClick={() => router.push(`/job/${jobId}/swipe`)}
-            className="px-6 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl transition-colors flex items-center gap-2 text-base font-medium"
+            sx={{ px: 3 }}
           >
-            <SkipForward className="w-4 h-4" />
             Skip Upload and Continue Swiping
-          </button>
-        </div>
+          </Button>
+        </Box>
 
         {/* Info Box */}
-        <div className="mt-6 bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4">
-          <h3 className="font-medium text-primary-900 dark:text-primary-100 mb-2">
+        <Paper
+          elevation={2}
+          sx={{
+            mt: 3,
+            p: 2,
+            backgroundColor: 'primary.light',
+            background: 'linear-gradient(to right, rgba(25, 118, 210, 0.08), rgba(25, 118, 210, 0.04))',
+          }}
+        >
+          <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: 'primary.main' }}>
             How it works
-          </h3>
-          <ul className="text-sm text-primary-700 dark:text-primary-200 space-y-1">
-            <li>• Upload resume files (PDF, Word, or text) or paste text</li>
-            <li>• Cerebras AI extracts skills, experience, and projects</li>
-            <li>• AI generates tailored summaries based on your job requirements</li>
-            <li>• Review candidates in the swipe interface</li>
-          </ul>
-        </div>
-      </main>
-    </div>
+          </Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2, color: 'text.secondary' }}>
+            <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+              Upload resume files (PDF, Word, or text) or paste text
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+              Cerebras AI extracts skills, experience, and projects
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
+              AI generates tailored summaries based on your job requirements
+            </Typography>
+            <Typography component="li" variant="body2">
+              Review candidates in the swipe interface
+            </Typography>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
   )
 }

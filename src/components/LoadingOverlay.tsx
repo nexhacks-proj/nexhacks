@@ -1,24 +1,56 @@
-import { Loader2, Sparkles } from 'lucide-react'
+import Backdrop from '@mui/material/Backdrop'
+import Box from '@mui/material/Box'
+import CircularProgress from '@mui/material/CircularProgress'
+import Typography from '@mui/material/Typography'
+import { AutoAwesome } from '@mui/icons-material'
 
 export default function LoadingOverlay() {
   return (
-    <div className="fixed inset-0 z-[100] bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm flex items-center justify-center fade-in animate-in duration-300">
-      <div className="text-center max-w-sm px-4">
-        <div className="relative w-16 h-16 mx-auto mb-6">
-          <div className="absolute inset-0 border-4 border-slate-200 dark:border-slate-700 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-primary-500 rounded-full border-t-transparent animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-primary-500 animate-pulse" />
-          </div>
-        </div>
-        
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+    <Backdrop
+      open={true}
+      sx={{
+        zIndex: (theme) => theme.zIndex.drawer + 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backdropFilter: 'blur(4px)',
+      }}
+    >
+      <Box sx={{ textAlign: 'center', maxWidth: 400, px: 2 }}>
+        <Box
+          sx={{
+            position: 'relative',
+            width: 64,
+            height: 64,
+            mx: 'auto',
+            mb: 3,
+          }}
+        >
+          <CircularProgress
+            size={64}
+            thickness={4}
+            sx={{
+              position: 'absolute',
+              color: 'primary.main',
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: 'primary.main',
+            }}
+          >
+            <AutoAwesome sx={{ fontSize: 24, animation: 'pulse 2s ease-in-out infinite' }} />
+          </Box>
+        </Box>
+        <Typography variant="h6" fontWeight={600} gutterBottom>
           Refining Your Applicants
-        </h2>
-        <p className="text-slate-600 dark:text-slate-300">
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
           The AI is re-analyzing remaining resumes based on your feedback to surface the best matches.
-        </p>
-      </div>
-    </div>
+        </Typography>
+      </Box>
+    </Backdrop>
   )
 }
