@@ -1,7 +1,7 @@
 // Email Agent - AI-powered email generation using Gemini
 // Part of the 3-step agent pipeline: Extract → Score → Email
 
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai'
 import { Candidate, Job } from '@/types'
 import { traceLLMCall, recordLLMMetrics, getCurrentSpan, LLM_ATTRIBUTES } from './tracing'
 
@@ -143,7 +143,7 @@ Email requirements:
 - If not provided, ask for 2-3 availability slots.
 - End with a polite close and signature (founder name + company).`
 
-  const modelName = 'gemini-1.5-flash'
+  const modelName = 'gemini-2.5-pro'
 
   try {
     // Wrap the LLM call with Phoenix tracing
@@ -167,8 +167,33 @@ Email requirements:
         const response = await model.generateContent({
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
           generationConfig: {
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
             temperature: 0.7,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: SchemaType.OBJECT,
+              properties: {
+                email: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    subject_options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                    body: { type: SchemaType.STRING },
+                    personalization_hooks: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                    next_steps: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+                  },
+                  required: ['subject_options', 'body', 'personalization_hooks', 'next_steps']
+                },
+                interview_pack: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    suggested_questions: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                    internal_notes: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+                  },
+                  required: ['suggested_questions', 'internal_notes']
+                }
+              },
+              required: ['email', 'interview_pack']
+            },
           },
         })
 
