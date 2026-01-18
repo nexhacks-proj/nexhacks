@@ -4,7 +4,9 @@
       "Bash(powershell -Command \"cd C:\\\\Users\\\\xaep\\\\Desktop\\\\nexhacks; npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias ''@/*'' --use-npm --no-turbopack\")",
       "Bash(powershell:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout:*)"
     ]
   }
 }
