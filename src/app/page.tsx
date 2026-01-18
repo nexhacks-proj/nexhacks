@@ -21,6 +21,7 @@ import TextField from '@mui/material/TextField'
 import Alert from '@mui/material/Alert'
 import Collapse from '@mui/material/Collapse'
 import { Work, People, ArrowForward, Bolt, Logout, Delete, AccessTime, Cancel, CheckCircle } from '@mui/icons-material'
+import CircularProgress from '@mui/material/CircularProgress'
 import Logo from '@/components/Logo'
 import { isAuthenticated, logout as authLogout, getUserEmail } from '@/lib/auth'
 
@@ -32,6 +33,8 @@ export default function Home() {
   const [deleteAllConfirmText, setDeleteAllConfirmText] = useState('')
   const [isClient, setIsClient] = useState(false)
   const [isAuth, setIsAuth] = useState(false)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isDeletingAll, setIsDeletingAll] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -49,9 +52,13 @@ export default function Home() {
   }
 
   const handleDeleteJob = (jobId: string) => {
-    deleteJob(jobId)
-    setJobToDelete(null)
-    // If no jobs left, stay on home page (which will show empty state)
+    setIsDeleting(jobId)
+    // Small delay for visual feedback
+    setTimeout(() => {
+      deleteJob(jobId)
+      setJobToDelete(null)
+      setIsDeleting(null)
+    }, 150)
   }
 
   const handleStartDeleteJob = (jobId: string) => {
@@ -60,10 +67,14 @@ export default function Home() {
 
   const handleDeleteAllConfirm = () => {
     if (deleteAllConfirmText.toLowerCase() === 'delete all') {
-      deleteAllJobs()
-      setShowDeleteAll(false)
-      setDeleteAllConfirmText('')
-      router.push('/')
+      setIsDeletingAll(true)
+      setTimeout(() => {
+        deleteAllJobs()
+        setShowDeleteAll(false)
+        setDeleteAllConfirmText('')
+        setIsDeletingAll(false)
+        router.push('/')
+      }, 200)
     }
   }
 
@@ -258,11 +269,17 @@ export default function Home() {
                     size="small"
                     color="error"
                     variant="contained"
-                    disabled={deleteAllConfirmText.toLowerCase() !== 'delete all'}
+                    disabled={deleteAllConfirmText.toLowerCase() !== 'delete all' || isDeletingAll}
                     onClick={handleDeleteAllConfirm}
-                    startIcon={<CheckCircle />}
+                    startIcon={isDeletingAll ? <CircularProgress size={16} color="inherit" /> : <CheckCircle />}
+                    sx={{
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover:not(:disabled)': {
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
                   >
-                    Confirm
+                    {isDeletingAll ? 'Deleting...' : 'Confirm'}
                   </Button>
                   <Button
                     size="small"
@@ -271,6 +288,13 @@ export default function Home() {
                       setDeleteAllConfirmText('')
                     }}
                     startIcon={<Cancel />}
+                    disabled={isDeletingAll}
+                    sx={{
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover:not(:disabled)': {
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
                   >
                     Cancel
                   </Button>
@@ -356,9 +380,16 @@ export default function Home() {
                                   e.stopPropagation()
                                   handleDeleteJob(job.id)
                                 }}
-                                startIcon={<CheckCircle />}
+                                disabled={isDeleting === job.id}
+                                startIcon={isDeleting === job.id ? <CircularProgress size={16} color="inherit" /> : <CheckCircle />}
+                                sx={{
+                                  transition: 'all 0.2s ease-in-out',
+                                  '&:hover:not(:disabled)': {
+                                    transform: 'translateY(-1px)',
+                                  },
+                                }}
                               >
-                                Confirm Delete
+                                {isDeleting === job.id ? 'Deleting...' : 'Confirm Delete'}
                               </Button>
                               <Button
                                 variant="outlined"
@@ -369,6 +400,13 @@ export default function Home() {
                                   handleCancelDelete()
                                 }}
                                 startIcon={<Cancel />}
+                                disabled={isDeleting === job.id}
+                                sx={{
+                                  transition: 'all 0.2s ease-in-out',
+                                  '&:hover:not(:disabled)': {
+                                    transform: 'translateY(-1px)',
+                                  },
+                                }}
                               >
                                 Cancel
                               </Button>
@@ -470,6 +508,13 @@ export default function Home() {
               size="large"
               endIcon={<ArrowForward />}
               onClick={() => router.push('/job/new')}
+              sx={{
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4,
+                },
+              }}
             >
               Create Your First Job
             </Button>

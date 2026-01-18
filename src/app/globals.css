@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth button interactions */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 /* Material Design base styles */
 body {
   min-height: 100vh;

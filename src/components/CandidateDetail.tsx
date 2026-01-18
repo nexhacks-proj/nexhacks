@@ -24,7 +24,10 @@ export default function CandidateDetail({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center"
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClose()
+        }}
       >
         <motion.div
           initial={{ y: '100%' }}
@@ -42,8 +45,13 @@ export default function CandidateDetail({
           {/* Header */}
           <div className="bg-gradient-to-br from-primary-500 to-primary-600 p-5 sm:p-6 text-white flex-shrink-0">
             <button
-              onClick={onClose}
-              className="absolute top-3 sm:top-4 right-3 sm:right-4 p-3 -m-1 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors touch-manipulation"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onClose()
+              }}
+              className="absolute top-3 sm:top-4 right-3 sm:right-4 p-3 -m-1 hover:bg-white/20 active:bg-white/30 rounded-full transition-all touch-manipulation"
+              type="button"
             >
               <X className="w-6 h-6" />
             </button>
@@ -231,29 +239,49 @@ export default function CandidateDetail({
           {/* Action Buttons */}
           <div className="flex-shrink-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 pb-safe space-y-3">
             <button
-              onClick={onClose}
-              className="w-full py-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-xl transition-colors flex items-center justify-center gap-2 touch-manipulation text-sm sm:text-base"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onClose()
+              }}
+              className="w-full py-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-xl transition-all flex items-center justify-center gap-2 touch-manipulation text-sm sm:text-base active:scale-95"
+              type="button"
             >
               <ArrowRight className="w-4 h-4" />
               Continue Without Downloading Resume
             </button>
             <div className="flex items-center justify-center gap-3">
               <button
-                onClick={() => onSwipe('left')}
-                className="flex-1 py-4 bg-danger/10 hover:bg-danger/20 active:bg-danger/30 text-danger font-medium rounded-xl transition-colors flex items-center justify-center gap-2 touch-manipulation"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onSwipe('left')
+                }}
+                className="flex-1 py-4 bg-danger/10 hover:bg-danger/20 active:bg-danger/30 text-danger font-medium rounded-xl transition-all flex items-center justify-center gap-2 touch-manipulation active:scale-95"
+                type="button"
               >
                 <X className="w-5 h-5" />
                 <span className="text-sm sm:text-base">Pass</span>
               </button>
               <button
-                onClick={onStar}
-                className="py-4 px-5 bg-warning/10 hover:bg-warning/20 active:bg-warning/30 text-warning font-medium rounded-xl transition-colors touch-manipulation"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onStar()
+                }}
+                className="py-4 px-5 bg-warning/10 hover:bg-warning/20 active:bg-warning/30 text-warning font-medium rounded-xl transition-all touch-manipulation active:scale-95"
+                type="button"
               >
                 <Star className="w-6 h-6" />
               </button>
               <button
-                onClick={() => onSwipe('right')}
-                className="flex-1 py-4 bg-success/10 hover:bg-success/20 active:bg-success/30 text-success font-medium rounded-xl transition-colors flex items-center justify-center gap-2 touch-manipulation"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onSwipe('right')
+                }}
+                className="flex-1 py-4 bg-success/10 hover:bg-success/20 active:bg-success/30 text-success font-medium rounded-xl transition-all flex items-center justify-center gap-2 touch-manipulation active:scale-95"
+                type="button"
               >
                 <Heart className="w-5 h-5" />
                 <span className="text-sm sm:text-base">Interested</span>

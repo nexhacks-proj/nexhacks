@@ -399,7 +399,16 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
               variant="outlined"
               onClick={loadWorkdayCandidates}
               disabled={isProcessing || isLoadingMock}
-              sx={{ color: '#005cb9', borderColor: '#005cb9' }}
+              startIcon={isLoadingMock ? <CircularProgress size={16} color="inherit" /> : <AutoAwesome />}
+              sx={{ 
+                color: '#005cb9', 
+                borderColor: '#005cb9',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover:not(:disabled)': {
+                  transform: 'translateY(-1px)',
+                  boxShadow: 2,
+                },
+              }}
             >
               {isLoadingMock ? 'Importing...' : 'Import from Workday (Demo)'}
             </Button>
@@ -422,8 +431,19 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
               disabled={isProcessing || isLoadingMock}
             />
             {manualText.trim() && !isProcessing && !isLoadingMock && (
-              <Button variant="contained" onClick={() => handleManualSubmit()} size="small">
-                Process Text
+              <Button 
+                variant="contained" 
+                onClick={() => handleManualSubmit()} 
+                size="small"
+                disabled={isProcessing || !manualText.trim()}
+                sx={{
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover:not(:disabled)': {
+                    transform: 'translateY(-1px)',
+                  },
+                }}
+              >
+                {isProcessing ? 'Processing...' : 'Process Text'}
               </Button>
             )}
           </Box>
@@ -444,6 +464,14 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
                 startIcon={<CheckCircle />}
                 onClick={processResumes}
                 size="small"
+                disabled={resumes.length === 0}
+                sx={{
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover:not(:disabled)': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: 2,
+                  },
+                }}
               >
                 Process with AI
               </Button>

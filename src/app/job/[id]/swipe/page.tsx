@@ -164,8 +164,13 @@ export default function SwipePage() {
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => router.push('/')}
-              className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors active:scale-95"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                router.push('/')
+              }}
+              className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95"
+              type="button"
             >
               <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-300" />
             </button>
@@ -179,16 +184,26 @@ export default function SwipePage() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => router.push(`/job/${jobId}/upload`)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors active:scale-95"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  router.push(`/job/${jobId}/upload`)
+                }}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all active:scale-95"
                 title="Upload More Resumes"
+                type="button"
               >
                 <Upload className="w-5 h-5 text-slate-600 dark:text-slate-300" />
               </button>
               <div className="flex gap-2">
               <button
-                  onClick={() => router.push(`/job/${jobId}/dashboard`)}
-                  className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors active:scale-95"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    router.push(`/job/${jobId}/dashboard`)
+                  }}
+                  className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95"
+                  type="button"
                 >
                   <Users className="w-6 h-6 text-slate-600 dark:text-slate-300" />
                 </button>
@@ -247,15 +262,25 @@ export default function SwipePage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3 items-center">
                 <button
-                  onClick={() => router.push(`/job/${jobId}/upload`)}
-                  className="px-6 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors flex items-center gap-2"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    router.push(`/job/${jobId}/upload`)
+                  }}
+                  className="px-6 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-all active:scale-95 flex items-center gap-2"
+                  type="button"
                 >
                   <Upload className="w-4 h-4" />
                   Upload More Resumes
                 </button>
                 <button
-                  onClick={() => router.push(`/job/${jobId}/dashboard`)}
-                  className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    router.push(`/job/${jobId}/dashboard`)
+                  }}
+                  className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all active:scale-95"
+                  type="button"
                 >
                   View Results
                 </button>

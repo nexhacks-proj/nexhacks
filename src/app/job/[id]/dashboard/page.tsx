@@ -119,8 +119,13 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => router.push(`/job/${jobId}/swipe`)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  router.push(`/job/${jobId}/swipe`)
+                }}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all active:scale-95"
+                type="button"
               >
                 <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
               </button>
@@ -135,15 +140,25 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => router.push(`/job/${jobId}/upload`)}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors text-sm"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  router.push(`/job/${jobId}/upload`)
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-all active:scale-95 text-sm"
+                type="button"
               >
                 <Upload className="w-4 h-4" />
                 Upload More Resumes
               </button>
               <button
-                onClick={() => router.push(`/job/${jobId}/swipe`)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-sm"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  router.push(`/job/${jobId}/swipe`)
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all active:scale-95 text-sm"
+                type="button"
               >
                 <Layers className="w-4 h-4" />
                 Continue Swiping

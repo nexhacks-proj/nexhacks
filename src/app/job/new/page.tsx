@@ -18,7 +18,8 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid2'
 import InputAdornment from '@mui/material/InputAdornment'
-import { ArrowBack, Add, Work } from '@mui/icons-material'
+import { ArrowBack, Add, Work, CheckCircle } from '@mui/icons-material'
+import CircularProgress from '@mui/material/CircularProgress'
 import { ExperienceLevel, Job } from '@/types'
 
 const SKILL_PATTERNS: { tag: string; patterns: RegExp[] }[] = [
@@ -54,6 +55,7 @@ export default function NewJobPage() {
   const [visaSponsorship, setVisaSponsorship] = useState(false)
   const [startupExperience, setStartupExperience] = useState(false)
   const [portfolioRequired, setPortfolioRequired] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const lastDetectedSkills = useRef<Set<string>>(new Set())
 
@@ -97,10 +99,27 @@ export default function NewJobPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim() || isSubmitting) return
+
+    setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/jobs/create', {
+      // Optimistic update - create job immediately in store for instant feedback
+      const optimisticJob = createJob({
+        title: title.trim(),
+        description: description.trim(),
+        techStack,
+        experienceLevel,
+        visaSponsorship,
+        startupExperiencePreferred: startupExperience,
+        portfolioRequired,
+      })
+
+      // Navigate immediately for instant feel
+      router.push(`/job/${optimisticJob.id}/upload`)
+
+      // Then sync with server in background (non-blocking)
+      fetch('/api/jobs/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -113,30 +132,34 @@ export default function NewJobPage() {
           portfolioRequired,
         }),
       })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to create job' }))
-        throw new Error(errorData.error || 'Failed to create job')
-      }
-
-      const data = await response.json()
-      const job = data.job
-
-      const jobWithDates: Job = {
-        ...job,
-        createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
-      }
-
-      // Update store with new job - merge both approaches into one
-      const { jobs: currentJobs } = useStore.getState()
-      useStore.setState({
-        jobs: [...currentJobs, jobWithDates],
-        currentJob: jobWithDates, // Set currentJob directly in setState instead of separate call
-      })
-
-      router.push(`/job/${job.id}/upload`)
+        .then(async (response) => {
+          if (response.ok) {
+            const data = await response.json()
+            const job = data.job
+            const jobWithDates: Job = {
+              ...job,
+              createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+            }
+            // Update store with server response (may have different ID)
+            const { jobs: currentJobs, currentJob } = useStore.getState()
+            useStore.setState({
+              jobs: currentJobs.map(j => j.id === optimisticJob.id ? jobWithDates : j),
+              currentJob: currentJob?.id === optimisticJob.id ? jobWithDates : currentJob,
+            })
+            // Update URL if ID changed
+            if (job.id !== optimisticJob.id) {
+              router.replace(`/job/${job.id}/upload`)
+            }
+          }
+        })
+        .catch((error) => {
+          console.error('Background sync failed (using local job):', error)
+          // Job already created locally, so user can continue
+        })
     } catch (error) {
       console.error('Error creating job:', error)
+      setIsSubmitting(false)
+      // Fallback: try again with local-only creation
       const job = createJob({
         title: title.trim(),
         description: description.trim(),
@@ -159,7 +182,20 @@ export default function NewJobPage() {
       {/* Header */}
       <AppBar position="sticky" elevation={1} sx={{ backgroundColor: 'background.paper' }}>
         <Toolbar sx={{ maxWidth: 'md', width: '100%', mx: 'auto', px: { xs: 2, sm: 3 } }}>
-          <IconButton edge="start" color="inherit" onClick={() => router.back()} sx={{ mr: 2, color: 'text.primary' }}>
+          <IconButton 
+            edge="start" 
+            color="inherit" 
+            onClick={() => router.push('/')} 
+            sx={{ 
+              mr: 2, 
+              color: 'text.primary',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'action.hover',
+                transform: 'scale(1.05)',
+              },
+            }}
+          >
             <ArrowBack />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ color: 'text.primary', fontWeight: 500 }}>
@@ -355,10 +391,25 @@ export default function NewJobPage() {
             variant="contained"
             size="large"
             fullWidth
-            disabled={!title.trim()}
-            sx={{ py: 1.5 }}
+            disabled={!title.trim() || isSubmitting}
+            sx={{ 
+              py: 1.5,
+              position: 'relative',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover:not(:disabled)': {
+                transform: 'translateY(-1px)',
+                boxShadow: 4,
+              },
+            }}
+            startIcon={
+              isSubmitting ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <CheckCircle />
+              )
+            }
           >
-            Create Job & Start Reviewing
+            {isSubmitting ? 'Creating Job...' : 'Create Job & Start Reviewing'}
           </Button>
         </Box>
       </Container>
