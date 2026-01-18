@@ -6,6 +6,10 @@ export interface Job {
   visaSponsorship: boolean
   startupExperiencePreferred: boolean
   portfolioRequired: boolean
+  feedback?: {
+    likes: string[]
+    dislikes: string[]
+  }
   createdAt: Date
 }
 
@@ -28,10 +32,15 @@ export interface Candidate {
   standoutProject: string
   aiSummary: string
 
+  // AI-generated bucket for ranking
+  aiBucket: AIBucket
+
   // Status
   status: 'pending' | 'interested' | 'rejected' | 'starred'
   swipedAt?: Date
 }
+
+export type AIBucket = 'top' | 'strong' | 'average' | 'weak' | 'poor'
 
 export interface Project {
   name: string

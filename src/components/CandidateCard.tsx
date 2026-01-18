@@ -7,7 +7,7 @@ import { Star, Check, X, User, Briefcase, Sparkles } from 'lucide-react'
 
 interface CandidateCardProps {
   candidate: Candidate
-  onSwipe: (direction: 'left' | 'right') => void
+  onSwipe: (direction: 'left' | 'right', feedback?: string) => void
   onStar: () => void
   onTap: () => void
   isTop: boolean
@@ -21,6 +21,7 @@ export default function CandidateCard({
   isTop
 }: CandidateCardProps) {
   const [exitDirection, setExitDirection] = useState<'left' | 'right' | null>(null)
+  const [feedbackText, setFeedbackText] = useState('')
 
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-200, 200], [-20, 20])
@@ -34,10 +35,10 @@ export default function CandidateCard({
     const threshold = 80 // Lower threshold for mobile
     if (info.offset.x > threshold) {
       setExitDirection('right')
-      onSwipe('right')
+      onSwipe('right', feedbackText)
     } else if (info.offset.x < -threshold) {
       setExitDirection('left')
-      onSwipe('left')
+      onSwipe('left', feedbackText)
     }
   }
 
@@ -161,6 +162,27 @@ export default function CandidateCard({
             </p>
           </div>
         </div>
+
+        {/* Feedback Section - Visible only on top card */}
+        {isTop && (
+          <div className="border-t border-slate-200 dark:border-slate-700 p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50">
+             <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+               Recruiter Notes
+             </div>
+             <input
+               type="text"
+               value={feedbackText}
+               onChange={(e) => setFeedbackText(e.target.value)}
+               placeholder="Add feedback (e.g. 'Love the startup exp', 'Needs React')..."
+               className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-400"
+               onKeyDown={(e) => e.stopPropagation()} // Prevent triggering global hotkeys
+               onClick={(e) => e.stopPropagation()}
+             />
+             <p className="text-[10px] text-slate-400 mt-1.5">
+               {feedbackText ? "Swipe right to LIKE this trait, left to DISLIKE it." : "Swipe normally to process without feedback."}
+             </p>
+          </div>
+        )}
 
         {/* Tap hint */}
         <div className="px-4 sm:px-6 pb-3 sm:pb-4 text-center flex-shrink-0">

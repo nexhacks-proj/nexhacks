@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { Candidate, Job } from '@/types'
+import { AIBucket, Candidate, Job } from '@/types'
 
 const getGeminiKey = () => {
   // Try multiple sources for the API key
@@ -44,24 +44,37 @@ interface ResumeParseResult {
   topStrengths: string[]
   standoutProject: string
   aiSummary: string
+  aiBucket: AIBucket
 }
 
 export async function parseResumeWithAI(
   rawResume: string,
-  job: Job
+  job: Job,
+  feedback?: { likes: string[]; dislikes: string[] }
 ): Promise<ResumeParseResult> {
-  const prompt = `You are an expert technical recruiter analyzing resumes for a startup hiring manager.
+  let prompt = `You are an expert technical recruiter analyzing resumes for a startup hiring manager. Your goal is to not just parse the resume, but to also categorize the candidate's fit for a specific role.
 
 JOB REQUIREMENTS:
 - Role: ${job.title}
 - Tech Stack: ${job.techStack.join(', ')}
 - Experience Level: ${job.experienceLevel === 'none' ? 'Entry Level (0 years)' : job.experienceLevel === '1-3' ? 'Mid Level (1-3 years)' : 'Senior (3+ years)'}
 - Startup Experience Preferred: ${job.startupExperiencePreferred ? 'Yes' : 'No'}
+`
 
+  if (feedback && (feedback.likes.length > 0 || feedback.dislikes.length > 0)) {
+    prompt += `
+RECRUITER FEEDBACK:
+The hiring manager has provided the following specific feedback. Use this to heavily influence the 'aiBucket' and 'aiSummary':
+${feedback.likes.length > 0 ? `- LIKES (Boost these candidates): ${feedback.likes.join(', ')}` : ''}
+${feedback.dislikes.length > 0 ? `- DISLIKES (Penalty these candidates): ${feedback.dislikes.join(', ')}` : ''}
+`
+  }
+
+  prompt += `
 RESUME:
 ${rawResume}
 
-TASK: Parse this resume and provide a structured analysis optimized for quick hiring decisions. Return ONLY valid JSON with this exact structure:
+TASK: Parse this resume, provide a structured analysis, and rank the candidate. Return ONLY valid JSON with this exact structure:
 
 {
   "skills": ["skill1", "skill2", ...],
@@ -96,14 +109,19 @@ TASK: Parse this resume and provide a structured analysis optimized for quick hi
     "strength 3 (specific to this role)"
   ],
   "standoutProject": "The single most impressive thing this candidate has done (1-2 sentences). Focus on impact and scale.",
-  "aiSummary": "2-3 sentence hiring manager summary. Is this a good fit? What are the trade-offs? Be honest and direct."
+  "aiSummary": "2-3 sentence hiring manager summary. Is this a good fit? What are the trade-offs? Be honest and direct. ${feedback ? 'Mention how they match the specific likes/dislikes feedback.' : ''}",
+  "aiBucket": "<'top' | 'strong' | 'average' | 'weak' | 'poor'>"
 }
 
-IMPORTANT:
-- topStrengths should be 3 bullet points highlighting why this candidate fits THIS specific role
-- standoutProject should be the ONE most impressive accomplishment
-- aiSummary should be candid - mention both strengths AND concerns/gaps
-- Return ONLY the JSON object, no markdown, no explanations`
+IMPORTANT INSTRUCTIONS:
+1.  **Bucketing:** Based on the ENTIRE resume and how it matches the job requirements ${feedback ? 'AND recruiter feedback' : ''}, assign the candidate to one of these 5 buckets:
+    - 'top': Exceptional candidate, a near-perfect match. Checks all the boxes and more. (90th percentile)
+    - 'strong': Very good candidate, meets most key requirements. (75th percentile)
+    - 'average': Decent candidate, meets some requirements but has gaps. (50th percentile)
+    - 'weak': Poor fit, missing most key requirements. (25th percentile)
+    - 'poor': Completely unqualified. (10th percentile)
+    ${feedback ? 'NOTE: If a candidate matches a "DISLIKE", they should likely be in "weak" or "poor". If they match "LIKES", boost them up.' : ''}
+2.  **JSON ONLY:** Return ONLY the JSON object, no markdown, no explanations, no text before or after the JSON.`
 
   try {
     const model = getModel()
@@ -134,24 +152,36 @@ IMPORTANT:
 // Parse multiple resumes in a single API call to avoid rate limiting
 export async function parseMultipleResumesWithAI(
   resumes: Array<{ id: string; name: string; email: string; rawResume: string }>,
-  job: Job
+  job: Job,
+  feedback?: { likes: string[]; dislikes: string[] }
 ): Promise<Array<ResumeParseResult & { id: string }>> {
   const resumesText = resumes.map((r, idx) =>
     `=== RESUME ${idx + 1} (ID: ${r.id}) ===\n${r.rawResume}\n=== END RESUME ${idx + 1} ===`
   ).join('\n\n')
 
-  const prompt = `You are an expert technical recruiter analyzing MULTIPLE resumes for a startup hiring manager.
+  let prompt = `You are an expert technical recruiter analyzing MULTIPLE resumes for a startup hiring manager. Your goal is to not just parse the resumes, but to also categorize each candidate's fit for a specific role.
 
 JOB REQUIREMENTS:
 - Role: ${job.title}
 - Tech Stack: ${job.techStack.join(', ')}
 - Experience Level: ${job.experienceLevel === 'none' ? 'Entry Level (0 years)' : job.experienceLevel === '1-3' ? 'Mid Level (1-3 years)' : 'Senior (3+ years)'}
 - Startup Experience Preferred: ${job.startupExperiencePreferred ? 'Yes' : 'No'}
+`
 
+  if (feedback && (feedback.likes.length > 0 || feedback.dislikes.length > 0)) {
+    prompt += `
+RECRUITER FEEDBACK:
+The hiring manager has provided the following specific feedback. Use this to heavily influence the 'aiBucket' and 'aiSummary':
+${feedback.likes.length > 0 ? `- LIKES (Boost these candidates): ${feedback.likes.join(', ')}` : ''}
+${feedback.dislikes.length > 0 ? `- DISLIKES (Penalty these candidates): ${feedback.dislikes.join(', ')}` : ''}
+`
+  }
+
+  prompt += `
 RESUMES TO ANALYZE:
 ${resumesText}
 
-TASK: Parse ALL ${resumes.length} resumes above and provide structured analysis for EACH candidate. Return ONLY a valid JSON array with one object per resume, in the SAME ORDER as provided above.
+TASK: Parse ALL ${resumes.length} resumes above and provide a structured analysis for EACH candidate. Return ONLY a valid JSON array with one object per resume, in the SAME ORDER as provided above.
 
 Each object in the array must have this exact structure:
 {
@@ -188,22 +218,27 @@ Each object in the array must have this exact structure:
     "strength 3 (specific to this role)"
   ],
   "standoutProject": "The single most impressive thing this candidate has done (1-2 sentences). Focus on impact and scale.",
-  "aiSummary": "2-3 sentence hiring manager summary. Is this a good fit? What are the trade-offs? Be honest and direct."
+  "aiSummary": "2-3 sentence hiring manager summary. Is this a good fit? What are the trade-offs? Be honest and direct. ${feedback ? 'Mention how they match the specific likes/dislikes feedback.' : ''}",
+  "aiBucket": "<'top' | 'strong' | 'average' | 'weak' | 'poor'>"
 }
 
-IMPORTANT:
-- Return a JSON ARRAY with exactly ${resumes.length} objects
-- Each object MUST include the "id" field matching the resume ID
-- topStrengths should be 3 bullet points highlighting why this candidate fits THIS specific role
-- standoutProject should be the ONE most impressive accomplishment
-- aiSummary should be candid - mention both strengths AND concerns/gaps
-- Return ONLY the JSON array, no markdown, no explanations`
+IMPORTANT INSTRUCTIONS:
+1.  **Bucketing:** For EACH candidate, based on their ENTIRE resume and how it matches the job requirements ${feedback ? 'AND recruiter feedback' : ''}, assign them to one of these 5 buckets:
+    - 'top': Exceptional candidate, a near-perfect match. Checks all the boxes and more. (90th percentile)
+    - 'strong': Very good candidate, meets most key requirements. (75th percentile)
+    - 'average': Decent candidate, meets some requirements but has gaps. (50th percentile)
+    - 'weak': Poor fit, missing most key requirements. (25th percentile)
+    - 'poor': Completely unqualified. (10th percentile)
+    ${feedback ? 'NOTE: If a candidate matches a "DISLIKE", they should likely be in "weak" or "poor". If they match "LIKES", boost them up.' : ''}
+2.  **JSON ARRAY ONLY:** Return a JSON ARRAY with exactly ${resumes.length} objects. Each object MUST include the "id" field matching the resume ID.
+3.  NO extra text: Return ONLY the JSON array, no markdown, no explanations, nothing else.`
 
   try {
     const model = getModel()
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
+    console.log("Gemini Raw Response:", text) // DEBUG
 
     // Extract JSON from response (handle markdown code blocks if present)
     let jsonText = text.trim()
@@ -247,7 +282,7 @@ export async function batchParseResumes(
 
       const batchPromise = (async () => {
         try {
-          const parsedBatch = await parseMultipleResumesWithAI(batch, job)
+          const parsedBatch = await parseMultipleResumesWithAI(batch, job, job.feedback)
 
           // Match parsed results with original candidates
           for (const candidate of batch) {
@@ -277,7 +312,8 @@ export async function batchParseResumes(
                 topStrengths: ['Unable to parse resume'],
                 standoutProject: 'Resume parsing failed',
                 aiSummary: 'AI parsing failed for this candidate. Please review manually.',
-                status: 'pending'
+                aiBucket: 'average', // Default bucket
+            status: 'pending'
               })
             }
           }
@@ -298,7 +334,8 @@ export async function batchParseResumes(
               topStrengths: ['Unable to parse resume'],
               standoutProject: 'Resume parsing failed',
               aiSummary: 'AI parsing failed for this candidate. Please review manually.',
-              status: 'pending'
+              aiBucket: 'average', // Default bucket
+          status: 'pending'
             })
           }
         } finally {
@@ -317,3 +354,4 @@ export async function batchParseResumes(
 
   return results
 }
+

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { Job, Candidate, SwipeAction } from '@/types'
+import { reprocessResumesAction } from '@/app/actions'
+import { Job, Candidate, SwipeAction, AIBucket } from '@/types'
 
 interface AppState {
   // Jobs
@@ -26,6 +27,15 @@ interface AppState {
   getInterestedCandidates: () => Candidate[]
   getRejectedCandidates: () => Candidate[]
   getStarredCandidates: () => Candidate[]
+
+  // New state and actions for ranking
+  rankedPendingIds: string[]
+  rankPendingCandidatesForCurrentJob: () => void
+
+  // Feedback & Reprocessing
+  isReprocessing: boolean
+  addFeedback: (type: 'likes' | 'dislikes', text: string) => void
+  reprocessCandidates: () => Promise<void>
 }
 
 export const useStore = create<AppState>()(
@@ -39,7 +49,8 @@ export const useStore = create<AppState>()(
         const newJob: Job = {
           ...jobData,
           id: Date.now().toString(),
-          createdAt: new Date()
+          createdAt: new Date(),
+          feedback: { likes: [], dislikes: [] }
         }
         set((state) => ({
           jobs: [...state.jobs, newJob],
@@ -50,12 +61,21 @@ export const useStore = create<AppState>()(
       },
 
       setCurrentJob: (job) => {
+        const { currentJob, rankedPendingIds } = get()
+        // Only re-rank if the job has changed or if we don't have a ranking yet
+        // Handle null job case safely
+        const shouldRank = !currentJob || !job || currentJob.id !== job.id || rankedPendingIds.length === 0
+        
         set({ currentJob: job })
-        // Don't auto-load - candidates are uploaded or loaded manually
+        
+        if (shouldRank) {
+          get().rankPendingCandidatesForCurrentJob()
+        }
       },
 
       // Candidates
       candidates: [],
+      rankedPendingIds: [],
 
       loadCandidatesForJob: (jobId) => {
         // No longer auto-loads mock data
@@ -66,12 +86,14 @@ export const useStore = create<AppState>()(
         set((state) => ({
           candidates: [...state.candidates, candidate]
         }))
+        get().rankPendingCandidatesForCurrentJob()
       },
 
       addCandidates: (candidates) => {
         set((state) => ({
           candidates: [...state.candidates, ...candidates]
         }))
+        get().rankPendingCandidatesForCurrentJob()
       },
 
       getCandidateById: (id) => {
@@ -113,12 +135,182 @@ export const useStore = create<AppState>()(
           swipeHistory: state.swipeHistory.slice(0, -1)
         }))
       },
+      
+      rankPendingCandidatesForCurrentJob: () => {
+        const { candidates, currentJob } = get()
+        if (!currentJob) {
+          set({ rankedPendingIds: [] })
+          return
+        }
+
+        const pending = candidates.filter(c => c.jobId === currentJob.id && c.status === 'pending')
+
+        // 1. Define bucket weights. Higher weight means more likely to be picked.
+        const bucketWeights: Record<AIBucket, number> = {
+          top: 16,
+          strong: 8,
+          average: 4,
+          weak: 2,
+          poor: 1
+        }
+
+        // 2. Group candidates by bucket and shuffle within each bucket.
+        const candidatesByBucket = pending.reduce((acc, candidate) => {
+          const bucket = candidate.aiBucket
+          if (!acc[bucket]) {
+            acc[bucket] = []
+          }
+          acc[bucket].push(candidate)
+          return acc
+        }, {} as Record<AIBucket, Candidate[]>)
+
+        // Shuffle each bucket's candidates
+        for (const bucket in candidatesByBucket) {
+          const b = bucket as AIBucket
+          // Simple array shuffle (Fisher-Yates)
+          for (let i = candidatesByBucket[b].length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [candidatesByBucket[b][i], candidatesByBucket[b][j]] = [candidatesByBucket[b][j], candidatesByBucket[b][i]]
+          }
+        }
+
+        // 3. Create a weighted list of bucket names to sample from.
+        const weightedBucketList: AIBucket[] = []
+        for (const bucket in bucketWeights) {
+          const b = bucket as AIBucket
+          const weight = bucketWeights[b]
+          for (let i = 0; i < weight; i++) {
+            if (candidatesByBucket[b] && candidatesByBucket[b].length > 0) {
+              weightedBucketList.push(b)
+            }
+          }
+        }
+        
+        // 4. Build the final sorted list.
+        const sortedCandidates: Candidate[] = []
+        const candidatePointers: Record<AIBucket, number> = { top: 0, strong: 0, average: 0, weak: 0, poor: 0 }
+
+        while (sortedCandidates.length < pending.length) {
+          if (weightedBucketList.length === 0) {
+             const remaining = pending.filter(c => !sortedCandidates.find(sc => sc.id === c.id));
+             sortedCandidates.push(...remaining);
+             break;
+          }
+
+          const randomBucketIndex = Math.floor(Math.random() * weightedBucketList.length)
+          const selectedBucket = weightedBucketList[randomBucketIndex]
+          const candidateIndex = candidatePointers[selectedBucket]
+          const candidate = candidatesByBucket[selectedBucket][candidateIndex]
+          
+          if(candidate) {
+            sortedCandidates.push(candidate)
+            candidatePointers[selectedBucket]++
+          }
+
+          if (candidatePointers[selectedBucket] >= candidatesByBucket[selectedBucket].length) {
+            for (let i = weightedBucketList.length - 1; i >= 0; i--) {
+              if (weightedBucketList[i] === selectedBucket) {
+                weightedBucketList.splice(i, 1)
+              }
+            }
+          }
+        }
+        set({ rankedPendingIds: sortedCandidates.map(c => c.id) })
+      },
+
+      // Feedback & Reprocessing
+      isReprocessing: false,
+
+      addFeedback: (type, text) => {
+        set((state) => {
+          if (!state.currentJob) return state
+          
+          const currentFeedback = state.currentJob.feedback || { likes: [], dislikes: [] }
+          const newFeedback = {
+            ...currentFeedback,
+            [type]: [...currentFeedback[type], text]
+          }
+
+          const updatedJob = { ...state.currentJob, feedback: newFeedback }
+
+          return {
+            currentJob: updatedJob,
+            jobs: state.jobs.map(j => j.id === updatedJob.id ? updatedJob : j)
+          }
+        })
+      },
+
+      reprocessCandidates: async () => {
+        const { currentJob, candidates } = get()
+        if (!currentJob) return
+
+        set({ isReprocessing: true })
+
+        try {
+          // Filter only pending candidates for this job to re-process
+          const pendingCandidates = candidates.filter(c => 
+            c.jobId === currentJob.id && c.status === 'pending'
+          )
+
+          if (pendingCandidates.length === 0) {
+            set({ isReprocessing: false })
+            return
+          }
+
+          // Prepare candidates for batch parsing (we need rawResume)
+          const candidatesToProcess = pendingCandidates.map(c => ({
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            rawResume: c.rawResume
+          }))
+
+          // Re-run the AI parsing with feedback included on the server
+          // The job object passed here ALREADY has the updated feedback from addFeedback
+          console.log("Reprocessing starting with job feedback (Server Action):", currentJob.feedback)
+          const reParsedResults = await reprocessResumesAction(candidatesToProcess, currentJob)
+          console.log("Reprocessing results:", reParsedResults)
+
+          // Update candidates in store with new AI results
+          set((state) => {
+            const updatedCandidates = state.candidates.map(c => {
+              const newVal = reParsedResults.find(r => r.id === c.id)
+              if (newVal) {
+                return {
+                  ...c,
+                  ...newVal, // Overwrite AI fields (bucket, summary, etc.)
+                }
+              }
+              return c
+            })
+            return { candidates: updatedCandidates }
+          })
+
+          // Re-rank
+          get().rankPendingCandidatesForCurrentJob()
+          console.log("Reprocessing and ranking complete")
+
+        } catch (error) {
+          console.error("Failed to reprocess candidates:", error)
+        } finally {
+          set({ isReprocessing: false })
+        }
+      },
 
       // Filtering
       getPendingCandidates: () => {
-        const { candidates, currentJob } = get()
+        const { candidates, currentJob, rankedPendingIds } = get()
         if (!currentJob) return []
-        return candidates.filter(c => c.jobId === currentJob.id && c.status === 'pending')
+        
+        const candidateMap = new Map(candidates.map(c => [c.id, c]))
+
+        const orderedCandidates = rankedPendingIds
+          .map(id => candidateMap.get(id))
+          .filter((c): c is Candidate => 
+            !!c && c.jobId === currentJob.id && c.status === 'pending'
+          )
+
+        return orderedCandidates
       },
 
       getInterestedCandidates: () => {

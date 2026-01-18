@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import CandidateCard from '@/components/CandidateCard'
 import CandidateDetail from '@/components/CandidateDetail'
+import LoadingOverlay from '@/components/LoadingOverlay'
 import { Candidate } from '@/types'
 import { ArrowLeft, RotateCcw, X, Star, Heart, Users, CheckCircle, XCircle, Upload } from 'lucide-react'
 
@@ -23,7 +24,10 @@ export default function SwipePage() {
     getStarredCandidates,
     swipeCandidate,
     undoLastSwipe,
-    swipeHistory
+    swipeHistory,
+    isReprocessing,
+    addFeedback,
+    reprocessCandidates
   } = useStore()
 
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
@@ -70,14 +74,26 @@ export default function SwipePage() {
   const rejectedCount = getRejectedCandidates().length
   const starredCount = getStarredCandidates().length
 
-  const handleSwipe = (direction: 'left' | 'right') => {
+  const handleSwipe = async (direction: 'left' | 'right', feedback?: string) => {
     if (isAnimating || pendingCandidates.length === 0) return
 
     setIsAnimating(true)
     const candidate = pendingCandidates[0]
 
-    setTimeout(() => {
+    // Handle feedback if present
+    if (feedback && feedback.trim()) {
+      const type = direction === 'right' ? 'likes' : 'dislikes'
+      addFeedback(type, feedback.trim())
+    }
+
+    setTimeout(async () => {
       swipeCandidate(candidate.id, direction === 'right' ? 'interested' : 'rejected')
+      
+      // If we had feedback, trigger reprocessing AFTER the swipe action
+      if (feedback && feedback.trim()) {
+        await reprocessCandidates()
+      }
+      
       setIsAnimating(false)
     }, 300)
   }
@@ -102,8 +118,12 @@ export default function SwipePage() {
     )
   }
 
+
+
   return (
     <div className="min-h-screen min-h-[100dvh] bg-slate-100 dark:bg-slate-900 flex flex-col">
+      {isReprocessing && <LoadingOverlay />}
+      
       {/* Header */}
       <header className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-50 pt-safe">
         <div className="max-w-lg mx-auto px-4 py-3">
@@ -130,12 +150,14 @@ export default function SwipePage() {
               >
                 <Upload className="w-5 h-5 text-slate-600 dark:text-slate-300" />
               </button>
+              <div className="flex gap-2">
               <button
-                onClick={() => router.push(`/job/${jobId}/dashboard`)}
-                className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors active:scale-95"
-              >
-                <Users className="w-6 h-6 text-slate-600 dark:text-slate-300" />
-              </button>
+                  onClick={() => router.push(`/job/${jobId}/dashboard`)}
+                  className="p-3 -m-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors active:scale-95"
+                >
+                  <Users className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+                </button>
+            </div>
             </div>
           </div>
 
