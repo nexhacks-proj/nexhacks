@@ -39,6 +39,7 @@ export default function DashboardPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>('interested')
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
+  const [isSending, setIsSending] = useState(false)
 
   useEffect(() => {
     const job = jobs.find(j => j.id === jobId)
@@ -211,13 +212,63 @@ export default function DashboardPage() {
                 Bulk Actions
               </h3>
               <button
-                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                onClick={async () => {
+                  if (confirm(`Send interview invitations to ${interested.length} candidates?`)) {
+                    setIsSending(true);
+                    let sentCount = 0;
+                    let errorMsg = null;
+                    
+                    for (const candidate of interested) {
+                      try {
+                        const res = await fetch('/api/email/send', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            candidate,
+                            job: currentJob
+                          })
+                        });
+                        
+                        if (res.ok) {
+                          sentCount++;
+                        } else {
+                          const data = await res.json();
+                          if (data.error && data.error.includes('configuration')) {
+                            errorMsg = data.error;
+                            break; // Stop trying if config is missing
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Failed to send to', candidate.email, error);
+                      }
+                    }
+                    
+                    setIsSending(false);
+                    
+                    if (errorMsg) {
+                      alert(`Error: ${errorMsg}`);
+                    } else {
+                      alert(`Sent ${sentCount}/${interested.length} emails!`);
+                    }
+                  }
+                }}
+                disabled={isSending}
+                className={`w-full py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2 ${isSending ? 'opacity-70 cursor-wait' : ''}`}
               >
-                <Mail className="w-4 h-4" />
-                Send Interview Invites to All ({interested.length})
+                {isSending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4" />
+                    Send Interview Invites to All ({interested.length})
+                  </>
+                )}
               </button>
               <p className="text-xs text-slate-400 text-center mt-2">
-                This would trigger email templates in a real implementation
+                Sends personalized interview invitations to all candidates in this list
               </p>
             </div>
           )}

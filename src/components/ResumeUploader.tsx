@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Upload, FileText, X, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react'
+import { Upload, FileText, X, Loader2, CheckCircle, AlertCircle, Sparkles, Mail } from 'lucide-react'
 import { Job, Candidate } from '@/types'
 import { useStore } from '@/store/useStore'
 import { extractTextFromFile, validateFileType } from '@/lib/fileConverter'
-import { addToMockResumes, mockRawResumes } from '@/data/mockCandidates'
+import { addToMockResumes, mockRawResumes, emailTestResumes } from '@/data/mockCandidates'
 
 interface ResumeFile {
   id: string
@@ -231,17 +231,18 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
     }
   }
 
-  const loadMockCandidates = async () => {
+  const loadMockCandidates = async (useEmailTestSet = false) => {
+    const dataSource = useEmailTestSet ? emailTestResumes : mockRawResumes
     setIsLoadingMock(true)
     setError(null)
-    setProgress({ current: 0, total: mockRawResumes.length })
+    setProgress({ current: 0, total: dataSource.length })
     
     let firstCandidateAdded = false
     const processedIds: string[] = []
 
     // Process mock resumes one at a time for progressive loading
-    for (let i = 0; i < mockRawResumes.length; i++) {
-      const resume = mockRawResumes[i]
+    for (let i = 0; i < dataSource.length; i++) {
+      const resume = dataSource[i]
       
       try {
         const response = await fetch('/api/candidates/parse-batch', {
@@ -279,7 +280,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
           }
         }
 
-        setProgress({ current: i + 1, total: mockRawResumes.length })
+        setProgress({ current: i + 1, total: dataSource.length })
       } catch (err) {
         console.error(`Error processing mock resume ${i + 1}:`, err)
         // Continue processing other resumes even if one fails
@@ -330,7 +331,7 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
             </label>
 
             <button
-              onClick={loadMockCandidates}
+              onClick={() => loadMockCandidates(false)}
               disabled={isProcessing || isLoadingMock}
               className={`px-6 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl transition-colors text-base font-medium flex items-center justify-center gap-2 ${isProcessing || isLoadingMock ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -342,9 +343,17 @@ export default function ResumeUploader({ job, onComplete, onMockComplete, onFirs
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  Load Mock Candidates
+                  Load Mock Data
                 </>
               )}
+            </button>
+            <button
+              onClick={() => loadMockCandidates(true)}
+              disabled={isProcessing || isLoadingMock}
+              className={`px-6 py-3 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-200 rounded-xl transition-colors text-base font-medium flex items-center justify-center gap-2 ${isProcessing || isLoadingMock ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+               <Mail className="w-4 h-4" />
+               Load Email Test Set
             </button>
           </div>
 
