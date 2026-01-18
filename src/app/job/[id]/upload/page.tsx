@@ -82,10 +82,30 @@ export default function UploadCandidatesPage() {
         <ResumeUploader
           job={currentJob}
           onComplete={(candidateIds) => {
-            router.push(`/job/${jobId}/swipe`)
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload/page.tsx:84',message:'onComplete called',data:{jobId,candidateIdsCount:candidateIds.length,currentJobId:currentJob?.id,jobsCount:jobs.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+            const targetPath = `/job/${jobId}/swipe`
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload/page.tsx:87',message:'About to navigate',data:{targetPath,jobId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+            router.push(targetPath)
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload/page.tsx:90',message:'router.push called',data:{targetPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
           }}
           onMockComplete={() => {
-            router.push(`/job/${jobId}/swipe`)
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload/page.tsx:93',message:'onMockComplete called',data:{jobId,currentJobId:currentJob?.id,jobsCount:jobs.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+            const targetPath = `/job/${jobId}/swipe`
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload/page.tsx:96',message:'About to navigate (mock)',data:{targetPath,jobId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+            router.push(targetPath)
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b0c145db-8445-481e-8029-d20c16f75259',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'upload/page.tsx:99',message:'router.push called (mock)',data:{targetPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
           }}
         />
 

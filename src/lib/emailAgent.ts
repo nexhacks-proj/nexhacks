@@ -80,16 +80,18 @@ export async function generateEmailWithAgent(
   }
 
   const systemPrompt = `You are a startup recruiter assistant writing concise, high-converting outreach emails.
-Return ONLY valid JSON matching the schema.
-Tone: friendly, professional, efficient. No slang, no emojis.
-Personalize using candidate evidence (projects/experience) without sounding creepy.`
 
-  const userPrompt = `Write an interview invitation email based on:
-- Founder preferences
-- Job info
-- The candidate card + evidence
+RULES:
+- Return ONLY valid JSON matching the schema
+- Tone: friendly, professional, efficient
+- No slang, no emojis
+- Personalize using candidate evidence (projects/experience) without sounding creepy`
 
-FOUNDER_PREFS:
+  const userPrompt = `Write an interview invitation email based on the information below.
+
+================================================================================
+FOUNDER PREFERENCES
+================================================================================
 {
   "founder_name": "${founderPrefs?.name || 'Hiring Manager'}",
   "company_name": "${founderPrefs?.company || 'Our Company'}",
@@ -101,29 +103,37 @@ FOUNDER_PREFS:
   "compensation_note": ${founderPrefs?.compensationNote ? `"${founderPrefs.compensationNote}"` : 'null'}
 }
 
-JOB:
+================================================================================
+JOB DETAILS
+================================================================================
 {
   "job_title": "${job.title}",
   "tech_stack": ${JSON.stringify(job.techStack || [])}
 }
 
-CANDIDATE_CARD:
+================================================================================
+CANDIDATE CARD
+================================================================================
 ${JSON.stringify(candidateCard, null, 2)}
 
-CANDIDATE_EVIDENCE:
-- Name: ${candidate.name}
-- Email: ${candidate.email}
-- Top Strengths: ${candidate.topStrengths?.join(', ') || 'Not specified'}
-- Standout Project: ${candidate.standoutProject || 'Not specified'}
-- Skills: ${candidate.skills?.join(', ') || 'Not specified'}
-- Experience: ${candidate.yearsOfExperience || 0} years
-- Projects: ${candidate.projects?.map(p => `${p.name}: ${p.description}`).join('; ') || 'Not specified'}
+================================================================================
+CANDIDATE EVIDENCE
+================================================================================
+Name:            ${candidate.name}
+Email:           ${candidate.email}
+Top Strengths:   ${candidate.topStrengths?.join(', ') || 'Not specified'}
+Standout Project: ${candidate.standoutProject || 'Not specified'}
+Skills:          ${candidate.skills?.join(', ') || 'Not specified'}
+Experience:      ${candidate.yearsOfExperience || 0} years
+Projects:        ${candidate.projects?.map(p => `${p.name}: ${p.description}`).join('; ') || 'Not specified'}
 
-Return ONLY JSON with this exact schema:
+================================================================================
+OUTPUT SCHEMA (Return ONLY this JSON structure)
+================================================================================
 {
   "email": {
     "subject_options": ["exactly 3 subject lines"],
-    "body": "email body, 120-180 words max",
+    "body": "email body, 120-180 words max, use \\n for line breaks",
     "personalization_hooks": ["exactly 2 short hooks referencing candidate evidence"],
     "next_steps": ["exactly 2 bullets with clear actions"]
   },
@@ -135,13 +145,22 @@ Return ONLY JSON with this exact schema:
   }
 }
 
-Email requirements:
-- Start with a clear reason you're reaching out.
-- Include 2 personalization hooks referencing candidate projects/experience.
-- State interview length + format (e.g., 20-min call).
-- If scheduling_link is provided, include it as the primary CTA.
-- If not provided, ask for 2-3 availability slots.
-- End with a polite close and signature (founder name + company).`
+================================================================================
+EMAIL REQUIREMENTS
+================================================================================
+1. Start with a clear reason you're reaching out
+
+2. Include 2 personalization hooks referencing candidate projects/experience
+
+3. State interview length + format (e.g., 20-min call)
+
+4. Call to action:
+   - If scheduling_link is provided → include it as the primary CTA
+   - If not provided → ask for 2-3 availability slots
+
+5. End with a polite close and signature (founder name + company)
+
+6. IMPORTANT: Use "\\n\\n" between paragraphs in the email body for proper formatting`
 
   const modelName = 'gemini-2.5-pro'
 
