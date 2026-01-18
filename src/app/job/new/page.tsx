@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import { ArrowLeft, Plus, X, Briefcase } from 'lucide-react'
-import { ExperienceLevel } from '@/types'
+import { ExperienceLevel, Job } from '@/types'
 
 const COMMON_TECH_TAGS = [
   'React', 'TypeScript', 'Node.js', 'Python', 'Go', 'Java',
@@ -35,20 +35,60 @@ export default function NewJobPage() {
     setTechStack(techStack.filter(t => t !== tag))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
 
-    const job = createJob({
-      title: title.trim(),
-      techStack,
-      experienceLevel,
-      visaSponsorship,
-      startupExperiencePreferred: startupExperience,
-      portfolioRequired
-    })
+    try {
+      // Save job to MongoDB via API
+      const response = await fetch('/api/jobs/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          techStack,
+          experienceLevel,
+          visaSponsorship,
+          startupExperiencePreferred: startupExperience,
+          portfolioRequired
+        })
+      })
 
-    router.push(`/job/${job.id}/upload`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to create job' }))
+        throw new Error(errorData.error || 'Failed to create job')
+      }
+
+      const data = await response.json()
+      const job = data.job
+
+      // Convert Date string back to Date object if needed
+      const jobWithDates: Job = {
+        ...job,
+        createdAt: job.createdAt ? new Date(job.createdAt) : new Date()
+      }
+
+      // Also save to Zustand store for local state with the DB job ID
+      const currentJobs = useStore.getState().jobs
+      useStore.setState({
+        jobs: [...currentJobs, jobWithDates],
+        currentJob: jobWithDates
+      })
+
+      router.push(`/job/${job.id}/upload`)
+    } catch (error) {
+      console.error('Error creating job:', error)
+      // Fallback: still create locally if API fails
+      const job = createJob({
+        title: title.trim(),
+        techStack,
+        experienceLevel,
+        visaSponsorship,
+        startupExperiencePreferred: startupExperience,
+        portfolioRequired
+      })
+      router.push(`/job/${job.id}/upload`)
+    }
   }
 
   return (

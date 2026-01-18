@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseMultipleResumesWithAI } from '@/lib/gemini'
-import { Job } from '@/types'
+import { saveCandidates } from '@/lib/candidateStore'
+import { Job, Candidate } from '@/types'
 
 interface ResumeInput {
   id: string
@@ -41,21 +42,24 @@ export async function POST(request: NextRequest) {
     const parsedResults = await parseMultipleResumesWithAI(resumes, job)
 
     // Map parsed results back to candidates with full data
-    const candidates = resumes.map(resume => {
+    const candidates: Candidate[] = resumes.map(resume => {
       const parsed = parsedResults.find(p => p.id === resume.id)
       if (parsed) {
         const { id, ...parseResult } = parsed
         return {
           id: resume.id,
+          jobId: job.id,
           name: resume.name,
           email: resume.email,
           rawResume: resume.rawResume,
-          ...parseResult
+          ...parseResult,
+          status: 'pending' as const
         }
       }
       // Fallback if parsing failed for this resume
       return {
         id: resume.id,
+        jobId: job.id,
         name: resume.name,
         email: resume.email,
         rawResume: resume.rawResume,
@@ -66,9 +70,20 @@ export async function POST(request: NextRequest) {
         workHistory: [],
         topStrengths: ['Unable to parse resume'],
         standoutProject: 'Resume parsing failed',
-        aiSummary: 'AI parsing failed for this candidate. Please review manually.'
+        aiSummary: 'AI parsing failed for this candidate. Please review manually.',
+        status: 'pending' as const
       }
     })
+
+    // Save all candidates to MongoDB
+    console.log(`[parse-batch] About to save ${candidates.length} candidate(s) to database...`)
+    try {
+      await saveCandidates(candidates)
+      console.log(`[parse-batch] ✅ Successfully saved ${candidates.length} candidate(s) to database`)
+    } catch (error) {
+      console.error('[parse-batch] ❌ Failed to save candidates to database:', error)
+      // Still return the candidates even if DB save fails (graceful degradation)
+    }
 
     return NextResponse.json({
       success: true,
