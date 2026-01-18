@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion'
 import { Candidate } from '@/types'
-import { Star, Check, X, User, Briefcase, Sparkles } from 'lucide-react'
+import { Star, Check, X, User, Briefcase, Sparkles, Zap } from 'lucide-react'
 
 interface CandidateCardProps {
   candidate: Candidate
@@ -21,6 +21,7 @@ export default function CandidateCard({
   isTop
 }: CandidateCardProps) {
   const [exitDirection, setExitDirection] = useState<'left' | 'right' | null>(null)
+  const [tldrMode, setTldrMode] = useState(false)
 
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-200, 200], [-20, 20])
@@ -97,15 +98,29 @@ export default function CandidateCard({
                 </div>
               </div>
             </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onStar()
-              }}
-              className="p-3 -m-1 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors flex-shrink-0"
-            >
-              <Star className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setTldrMode(!tldrMode)
+                }}
+                className={`p-2 rounded-full transition-colors flex-shrink-0 ${
+                  tldrMode ? 'bg-white/30' : 'hover:bg-white/20 active:bg-white/30'
+                }`}
+                title="Toggle TL;DR mode"
+              >
+                <Zap className="w-5 h-5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onStar()
+                }}
+                className="p-3 -m-1 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors flex-shrink-0"
+              >
+                <Star className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {/* Skills Tags */}
@@ -128,43 +143,95 @@ export default function CandidateCard({
 
         {/* Card Body - Scrollable */}
         <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex-1 overflow-y-auto touch-scroll">
-          {/* Top Strengths */}
-          <div>
-            <h3 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-              Key Strengths
-            </h3>
-            <ul className="space-y-1.5 sm:space-y-2">
-              {candidate.topStrengths.slice(0, 3).map((strength, i) => (
-                <li key={i} className="flex items-start gap-2 text-slate-700 dark:text-slate-200">
-                  <span className="text-success mt-0.5 flex-shrink-0">✓</span>
-                  <span className="text-xs sm:text-sm leading-snug">{strength}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {tldrMode ? (
+            /* TL;DR Mode - Ultra-compressed view */
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg p-4 border border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
+                    TL;DR Summary
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                  {candidate.yearsOfExperience}yr exp • {candidate.skills.slice(0, 3).join(' • ')}
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+                  {candidate.topStrengths[0]}
+                </p>
+              </div>
 
-          {/* Standout Project */}
-          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 sm:p-4">
-            <h3 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 sm:mb-2 flex items-center gap-1">
-              <Sparkles className="w-4 h-4 text-warning" />
-              Standout
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 line-clamp-3">
-              {candidate.standoutProject}
-            </p>
-          </div>
+              <div className="text-center py-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-full">
+                  <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                    {candidate.yearsOfExperience >= 3 && candidate.workHistory?.some(w => w.isStartup) ? '👍' :
+                     candidate.yearsOfExperience >= 2 ? '🤔' : '👎'}
+                  </span>
+                  <span className="text-sm text-slate-600 dark:text-slate-300">
+                    {candidate.yearsOfExperience >= 3 && candidate.workHistory?.some(w => w.isStartup) ? 'Strong Fit' :
+                     candidate.yearsOfExperience >= 2 ? 'Maybe' : 'Weak Fit'}
+                  </span>
+                </div>
+              </div>
 
-          {/* AI Summary */}
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-3 sm:pt-4">
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 italic line-clamp-3">
-              "{candidate.aiSummary}"
-            </p>
-          </div>
+              {candidate.compressionStats && (
+                <div className="text-center text-xs text-slate-400 dark:text-slate-500">
+                  <Zap className="w-3 h-3 inline mr-1" />
+                  {candidate.compressionStats.saved.toLocaleString()} tokens saved via bear-1
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Normal Mode */
+            <>
+              {/* Top Strengths */}
+              <div>
+                <h3 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                  Key Strengths
+                </h3>
+                <ul className="space-y-1.5 sm:space-y-2">
+                  {candidate.topStrengths.slice(0, 3).map((strength, i) => (
+                    <li key={i} className="flex items-start gap-2 text-slate-700 dark:text-slate-200">
+                      <span className="text-success mt-0.5 flex-shrink-0">✓</span>
+                      <span className="text-xs sm:text-sm leading-snug">{strength}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Standout Project */}
+              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 sm:p-4">
+                <h3 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 sm:mb-2 flex items-center gap-1">
+                  <Sparkles className="w-4 h-4 text-warning" />
+                  Standout
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 line-clamp-3">
+                  {candidate.standoutProject}
+                </p>
+              </div>
+
+              {/* AI Summary */}
+              <div className="border-t border-slate-200 dark:border-slate-700 pt-3 sm:pt-4">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 italic line-clamp-3">
+                  "{candidate.aiSummary}"
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Tap hint */}
         <div className="px-4 sm:px-6 pb-3 sm:pb-4 text-center flex-shrink-0">
-          <span className="text-xs text-slate-400">Tap to view full resume</span>
+          <span className="text-xs text-slate-400">
+            {tldrMode ? (
+              <span className="flex items-center justify-center gap-1">
+                <Zap className="w-3 h-3 text-emerald-500" />
+                TL;DR mode • Tap for full resume
+              </span>
+            ) : (
+              'Tap to view full resume'
+            )}
+          </span>
         </div>
       </div>
     </motion.div>

@@ -28,6 +28,16 @@ export interface Candidate {
   standoutProject: string
   aiSummary: string
 
+  // TL;DR compressed summary (generated on-demand)
+  tldr?: string
+
+  // bear-1 compression stats
+  compressionStats?: {
+    originalTokens: number
+    compressedTokens: number
+    saved: number
+  }
+
   // Status
   status: 'pending' | 'interested' | 'rejected' | 'starred'
   swipedAt?: Date
