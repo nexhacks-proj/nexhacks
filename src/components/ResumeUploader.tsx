@@ -103,16 +103,6 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
     }
   }
 
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    setTimeout(async () => {
-      const target = e.currentTarget as HTMLInputElement
-      const text = target?.value || ''
-      if (text.trim()) {
-        await handleManualSubmit(text)
-      }
-    }, 100)
-  }
-
   const handleManualSubmit = async (text?: string) => {
     const resumeText = text || manualText
     if (!resumeText.trim()) return
@@ -391,8 +381,9 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
             </label>
 
             <Button
-              variant="outlined"
-              startIcon={isLoadingMock ? <CircularProgress size={16} /> : <AutoAwesome />}
+              variant="contained"
+              color="secondary"
+              startIcon={isLoadingMock ? <CircularProgress size={16} color="inherit" /> : <AutoAwesome />}
               onClick={loadMockCandidates}
               disabled={isProcessing || isLoadingMock}
             >
@@ -425,7 +416,6 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
               placeholder="Paste or type resume text here..."
               value={manualText}
               onChange={(e) => setManualText(e.target.value)}
-              onPaste={handlePaste}
               disabled={isProcessing || isLoadingMock}
             />
             {manualText.trim() && !isProcessing && !isLoadingMock && (
@@ -501,24 +491,59 @@ export default function ResumeUploader({ job, onComplete, onMockComplete }: Resu
 
       {/* Processing State */}
       {(isProcessing || isLoadingMock) && (
-        <Paper elevation={2} sx={{ p: 3, textAlign: 'center', backgroundColor: 'primary.light' }}>
-          <CircularProgress size={32} sx={{ mb: 2 }} color="primary" />
-          <Typography variant="body2" fontWeight={500} gutterBottom>
-            {isLoadingMock ? 'Processing Mock Candidates with Cerebras AI...' : 'Processing with Cerebras AI...'}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {progress.current} of {progress.total} candidates analyzed
-          </Typography>
-          <Box sx={{ mt: 2, width: '100%' }}>
-            <LinearProgress
-              variant="determinate"
-              value={(progress.current / progress.total) * 100}
-              sx={{ height: 8, borderRadius: 4 }}
+        <Paper 
+          elevation={4} 
+          sx={{ 
+            p: 4, 
+            textAlign: 'center',
+            backgroundColor: 'background.paper',
+            border: 2,
+            borderColor: 'primary.main',
+          }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <CircularProgress 
+              size={48} 
+              thickness={4}
+              sx={{ color: 'primary.main' }}
             />
+            <Box>
+              <Typography 
+                variant="body1" 
+                fontWeight={600} 
+                gutterBottom
+                sx={{ color: 'text.primary', mb: 1 }}
+              >
+                {isLoadingMock ? 'Processing Mock Candidates with Cerebras AI...' : 'Processing with Cerebras AI...'}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ color: 'text.primary', fontWeight: 500, mb: 2 }}
+              >
+                {progress.current} of {progress.total} candidates analyzed
+              </Typography>
+              <Box sx={{ width: '100%', maxWidth: 400, mx: 'auto', mb: 2 }}>
+                <LinearProgress
+                  variant="determinate"
+                  value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0}
+                  sx={{ 
+                    height: 10, 
+                    borderRadius: 5,
+                    backgroundColor: 'action.hover',
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 5,
+                    }
+                  }}
+                />
+              </Box>
+              <Typography 
+                variant="caption" 
+                sx={{ color: 'text.secondary', display: 'block' }}
+              >
+                This may take a moment for large batches...
+              </Typography>
+            </Box>
           </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-            This may take a moment for large batches...
-          </Typography>
         </Paper>
       )}
 

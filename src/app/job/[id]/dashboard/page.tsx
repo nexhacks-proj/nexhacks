@@ -211,6 +211,10 @@ export default function DashboardPage() {
                 Bulk Actions
               </h3>
               <button
+                onClick={() => {
+                  // TODO: Implement email sending functionality
+                  alert(`Would send interview invites to ${interested.length} candidates`)
+                }}
                 className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Mail className="w-4 h-4" />
