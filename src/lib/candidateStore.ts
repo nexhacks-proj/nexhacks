@@ -1,30 +1,14 @@
 import { Candidate } from '@/types'
-import connectDB, { MONGODB_ENABLED } from './db'
-
-// Dynamically import models only if MongoDB is enabled - using lazy import to avoid build-time errors
-let CandidateModel: any = null
-async function getCandidateModel() {
-  if (!MONGODB_ENABLED) return null
-  if (CandidateModel) return CandidateModel
-  
-  try {
-    // Use dynamic import at runtime, not build time
-    const modelModule = await import('@/models/Candidate')
-    CandidateModel = modelModule.default
-    return CandidateModel
-  } catch (error) {
-    console.warn('[candidateStore] Candidate model not available:', error)
-    return null
-  }
-}
+import connectDB from './db'
+import CandidateModel from '@/models/Candidate'
+import { shouldUseMongoDB } from './storageConfig'
 
 /**
- * Save a candidate to MongoDB
+ * Save a candidate to MongoDB (only in production)
  */
 export async function saveCandidate(candidate: Candidate): Promise<void> {
-  const model = await getCandidateModel()
-  if (!MONGODB_ENABLED || !model) {
-    console.warn('[candidateStore] MongoDB not available, skipping save. Candidate stored locally only.')
+  if (!shouldUseMongoDB()) {
+    console.log('[candidateStore] Skipping MongoDB save (local dev mode - using localStorage)')
     return
   }
   
@@ -37,7 +21,7 @@ export async function saveCandidate(candidate: Candidate): Promise<void> {
 }
 
 /**
- * Save multiple candidates to MongoDB
+ * Save multiple candidates to MongoDB (only in production)
  */
 export async function saveCandidates(candidates: Candidate[]): Promise<void> {
   if (candidates.length === 0) {
@@ -45,9 +29,8 @@ export async function saveCandidates(candidates: Candidate[]): Promise<void> {
     return
   }
   
-  const model = await getCandidateModel()
-  if (!MONGODB_ENABLED || !model) {
-    console.warn('[candidateStore] MongoDB not available, skipping save. Candidates stored locally only.')
+  if (!shouldUseMongoDB()) {
+    console.log(`[candidateStore] Skipping MongoDB save for ${candidates.length} candidate(s) (local dev mode - using localStorage)`)
     return
   }
   

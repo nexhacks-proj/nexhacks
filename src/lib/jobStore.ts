@@ -1,30 +1,14 @@
 import { Job } from '@/types'
-import connectDB, { MONGODB_ENABLED } from './db'
-
-// Dynamically import models only if MongoDB is enabled - using lazy require to avoid build-time errors
-let JobModel: any = null
-async function getJobModel() {
-  if (!MONGODB_ENABLED) return null
-  if (JobModel) return JobModel
-  
-  try {
-    // Use dynamic import at runtime, not build time
-    const modelModule = await import('@/models/Job')
-    JobModel = modelModule.default
-    return JobModel
-  } catch (error) {
-    console.warn('[jobStore] Job model not available:', error)
-    return null
-  }
-}
+import connectDB from './db'
+import JobModel from '@/models/Job'
+import { shouldUseMongoDB } from './storageConfig'
 
 /**
- * Save a job to MongoDB
+ * Save a job to MongoDB (only in production)
  */
 export async function saveJob(job: Job): Promise<void> {
-  const model = await getJobModel()
-  if (!MONGODB_ENABLED || !model) {
-    console.warn('[jobStore] MongoDB not available, skipping save. Job stored locally only.')
+  if (!shouldUseMongoDB()) {
+    console.log('[jobStore] Skipping MongoDB save (local dev mode - using localStorage)')
     return
   }
   
