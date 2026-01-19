@@ -43,7 +43,7 @@ export default function LoginPage() {
       sessionStorage.setItem('userEmail', email)
       sessionStorage.setItem('username', email)
       
-      // Redirect to home page
+      // Redirect to dashboard/home page
       router.push('/')
       router.refresh()
     } else {
